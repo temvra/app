@@ -21,6 +21,22 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // Dos versiones de la misma app: la personal (Releases de GitHub, se actualiza sola) y la de Google Play
+    buildFeatures { buildConfig = true }
+    flavorDimensions = ["canal"]
+    productFlavors {
+        personal {
+            dimension "canal"
+            applicationId "com.temvra.app.personal"
+            buildConfigField "boolean", "PLAY", "false"
+        }
+        // Sin actualizador propio (Play se encarga) ni permisos que Play no permite: ./gradlew bundlePlayRelease
+        play {
+            dimension "canal"
+            applicationId "com.temvra.app"
+            buildConfigField "boolean", "PLAY", "true"
+        }
+    }
     signingConfigs {
         release {
             if(ksProps['storeFile']){

@@ -1,0 +1,66 @@
+name: Compilar para Google Play
+
+# Se lanza a mano (pestaña Actions › «Compilar para Google Play» › Run workflow) cuando quieras subir una versión a Play.
+# Genera el paquete .aab de com.temvra.app firmado con la clave de subida; no publica ninguna Release.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  aab:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Licencias de Android
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+
+      - name: Preparar la web de la app
+        run: |
+          npm ci
+          npm run build
+          npx cap sync android
+
+      # La misma clave que la versión personal: en Play hace de clave de subida (Google firma la app que llega a los móviles)
+      - name: Clave de subida
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then echo "::error::Falta la clave de firma (secreto KEYSTORE_BASE64)"; exit 1; fi
+          echo "$KEYSTORE_BASE64" | base64 -d > android/app/temvra-release.keystore
+          printf "storeFile=temvra-release.keystore\nstorePassword=%s\nkeyAlias=vuelta\nkeyPassword=%s\n" "$KEYSTORE_PASSWORD" "$KEYSTORE_PASSWORD" > android/keystore.properties
+
+      # El número de versión sale del número de esta ejecución: 1, 2, 3… Play exige que cada subida tenga uno mayor
+      - name: Compilar el paquete para Play
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew bundlePlayRelease --no-daemon
+
+      - name: Comprobar el paquete
+        run: |
+          f=android/app/build/outputs/bundle/playRelease/app-play-release.aab
+          test -s "$f"
+          unzip -l "$f" | grep -q "META-INF/.*\.RSA\|META-INF/.*\.EC\|META-INF/.*\.DSA" || { echo "::error::El paquete no está firmado"; exit 1; }
+          mkdir -p out
+          cp "$f" "out/Temvra-1.0.${{ github.run_number }}.aab"
+          ls -la out
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: Temvra-GooglePlay-1.0.${{ github.run_number }}
+          path: out/*.aab
+          retention-days: 90

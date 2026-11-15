@@ -9768,7 +9768,9 @@ if(!S.upd)S.upd={on:true,mode:'ask',last:0,token:'',skip:''};
 /* En PC se actualiza sola: se descarga en silencio y se instala al cerrar la app */
 if(window.VTDesktop&&!S.upd.touched)S.upd.mode='auto';
 const UPD_REPO='temvra/temvP';
-const updTV=()=>window.VTNative&&VTNative.hasPlugin&&window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.Temvra||null;
+/* En la versión de Google Play las actualizaciones las hace Play: sin actualizador propio */
+const updPlay=()=>{try{return !!(window.VTBuild&&VTBuild.channel&&VTBuild.channel()==='play')}catch(e){return false}};
+const updTV=()=>!updPlay()&&window.VTNative&&VTNative.hasPlugin&&window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.Temvra||null;
 const updDesk=()=>window.VTDesktop&&VTDesktop.version?VTDesktop:null;
 const updOk=()=>!!(updTV()||updDesk());
 /* El token de GitHub no se pasa: el repositorio de versiones es público y el actualizador lo guardaría sin cifrar */

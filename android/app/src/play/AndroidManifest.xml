@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Versión de Google Play: las actualizaciones las hace Play, así que fuera el actualizador propio y el permiso de instalar APKs.
+     Tampoco se pide la exención de batería: Play solo la permite en casos aprobados y las alarmas ya son exactas -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" tools:node="remove" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" tools:node="remove" />
+    <application>
+        <receiver android:name="com.temvra.app.UpdateReceiver" tools:node="remove" />
+    </application>
+</manifest>

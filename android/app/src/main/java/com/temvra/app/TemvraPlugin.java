@@ -87,11 +87,18 @@ public class TemvraPlugin extends Plugin {
         call.resolve();
     }
 
+    /** Qué versión es («personal» o «play»): la página la consulta al arrancar para esconder el actualizador en la de Google Play. */
+    static final class Canal {
+        @android.webkit.JavascriptInterface
+        public String channel() { return BuildConfig.PLAY ? "play" : "personal"; }
+    }
+
     @Override
     public void load() {
         getBridge().getWebView().addJavascriptInterface(new Secreto(getContext()), "VTSecret");
+        getBridge().getWebView().addJavascriptInterface(new Canal(), "VTBuild");
         getActivity().runOnUiThread(this::edgeToEdge);
-        Updater.schedule(getContext());
+        if (!BuildConfig.PLAY) Updater.schedule(getContext());
         Intent it = getActivity() != null ? getActivity().getIntent() : null;
         if (it != null) deliverAction(it);
     }
@@ -318,7 +325,8 @@ public class TemvraPlugin extends Plugin {
         Uri pkg = Uri.parse("package:" + c.getPackageName());
         Intent it;
         if ("fullScreen".equals(which) && Build.VERSION.SDK_INT >= 34) it = new Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, pkg);
-        else if ("battery".equals(which)) it = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, pkg);
+        // En Google Play no se pide la exención directamente: se abre la lista de apps para que la quite quien quiera
+        else if ("battery".equals(which)) it = BuildConfig.PLAY ? new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS) : new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, pkg);
         else if ("channels".equals(which) || "notifications".equals(which)) it = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, c.getPackageName());
         else it = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, pkg);
         try {
@@ -376,7 +384,7 @@ public class TemvraPlugin extends Plugin {
                 .putString("token", call.getString("token", ""))
                 .putString("skip", call.getString("skip", ""))
                 .apply();
-        Updater.schedule(c);
+        if (!BuildConfig.PLAY) Updater.schedule(c);
         JSObject out = new JSObject();
         out.put("version", Updater.installed(c));
         out.put("canInstall", Updater.canInstall(c));
@@ -387,6 +395,7 @@ public class TemvraPlugin extends Plugin {
 
     @PluginMethod
     public void updCheck(PluginCall call) {
+        if (BuildConfig.PLAY) { call.reject("play"); return; }
         final Context c = getContext();
         final String token = call.getString("token", "");
         new Thread(() -> {
@@ -405,6 +414,7 @@ public class TemvraPlugin extends Plugin {
 
     @PluginMethod
     public void updDownload(PluginCall call) {
+        if (BuildConfig.PLAY) { call.reject("play"); return; }
         final Context c = getContext();
         final String url = call.getString("url", ""), token = call.getString("token", ""), name = call.getString("name", "Temvra.apk");
         new Thread(() -> {
@@ -423,6 +433,7 @@ public class TemvraPlugin extends Plugin {
     /** Abre el instalador de Android. Sin el permiso «Instalar apps desconocidas» abre ese ajuste. */
     @PluginMethod
     public void updInstall(PluginCall call) {
+        if (BuildConfig.PLAY) { call.reject("play"); return; }
         Context c = getContext();
         java.io.File f = new java.io.File(call.getString("path", Updater.sp(c).getString("apkPath", "")));
         if (!f.exists()) { call.reject("missing"); return; }

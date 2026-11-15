@@ -53,12 +53,12 @@ jobs:
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assemblePersonalRelease --no-daemon
 
       - name: Renombrar APK
         run: |
           mkdir -p out
-          cp android/app/build/outputs/apk/release/app-release.apk "out/Temvra-Personal-1.0.${{ github.run_number }}.apk"
+          cp android/app/build/outputs/apk/personal/release/app-personal-release.apk "out/Temvra-Personal-1.0.${{ github.run_number }}.apk"
 
       # Si falla, se publica igualmente el APK
       - name: Compilar la app de PC

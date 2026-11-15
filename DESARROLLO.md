@@ -57,4 +57,11 @@ Se prueba en un móvil Android, en un PC con Linux y en tableta.
 - Rendimiento: con CDP `Emulation.setCPUThrottlingRate {rate:4}` para parecerse a un móvil, mide fotogramas con `requestAnimationFrame` y `Performance.getMetrics` (`TaskDuration`) en reposo y en las transiciones. En la app hay un medidor de fps (Ajustes › Rendimiento) que copia un informe por vistas.
 - Carpeta real: en el navegador define `window.__dirTestBackend` con `addInitScript` (`kind`, `pick`, `list`, `read`, `write`, `trash`, `move`, `mkdir` sobre un objeto en memoria). En Electron, escribe `carpetas.json` (array con la ruta) en el perfil temporal para permitir una carpeta sin el diálogo. Electron como root necesita `--no-sandbox`.
 - Sincronización con GitHub: no uses la API real; simula `api.github.com` con un servidor git en memoria (refs, commits, trees, blobs) compartido por dos contextos del navegador.
-- Android: con el móvil conectado por USB, `npm run apk` y `adb install -r android/app/build/outputs/apk/debug/app-debug.apk`; logs con `adb logcat | grep -i temvra`.
+- Android: con el móvil conectado por USB, `npm run apk` y `adb install -r android/app/build/outputs/apk/personal/debug/app-personal-debug.apk`; logs con `adb logcat | grep -i temvra`.
+
+## Versión de Google Play
+- Dos *flavors* en `android/app/build.gradle`: **personal** (`com.temvra.app.personal`, Releases de GitHub con actualizador propio) y **play** (`com.temvra.app`, para Google Play). El código es el mismo; `BuildConfig.PLAY` distingue las dos en Java y `VTBuild.channel()` en la página (`'play'` o `'personal'`).
+- La de Play no lleva el actualizador (`UpdateReceiver`, `upd*` del plugin) ni los permisos `REQUEST_INSTALL_PACKAGES` y `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (`android/app/src/play/AndroidManifest.xml`). Su nombre y paquete están en `android/app/src/play/res/values/strings.xml`.
+- El .aab se genera a mano en GitHub: *Actions › Compilar para Google Play › Run workflow* (`.github/workflows/play.yml`). Sale como artefacto, firmado con la clave de subida (la misma del keystore), y su número de versión es el de esa ejecución. En local: `npm run aab`.
+- El push a `main` sigue compilando solo la versión personal (`assemblePersonalRelease`).
+
