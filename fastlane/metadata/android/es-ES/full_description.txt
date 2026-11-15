@@ -1,0 +1,36 @@
+Temvra junta en una sola app todo lo que necesitas para organizar tu tiempo: temporizadores, agenda, bloques de trabajo y notas. Sin cuentas, sin anuncios y con tus datos en tu móvil.
+
+⏳ TEMPORIZADORES Y ALARMAS
+• Cuentas atrás en bucle o de una sola vez
+• Circuitos de ejercicio por intervalos, con avisos por voz
+• Cronómetro, vueltas, alarmas y relojes del mundo
+• Las alarmas suenan aunque tengas la pantalla apagada o bloqueada
+
+📅 AGENDA CON EL RAYO DE LA HORA
+• Vistas de día, semana, mes, año y programación
+• Una línea de luz marca el momento exacto en el que estás, del color que tú elijas
+• Eventos, citas, tareas y recordatorios
+• Días festivos de tu país y suscripción a calendarios (.ics)
+
+🧱 BLOQUES DE TRABAJO
+• Reparte tu jornada en bloques de colores
+• Mira de un vistazo cuánto tiempo dedicas a cada cosa
+
+📝 NOTAS ENLAZADAS
+• Notas en Markdown con enlaces entre ellas, carpetas, etiquetas, imágenes y lienzos
+• Enlaces entrantes y salientes, al estilo de Obsidian
+
+📱 WIDGETS
+• «Ahora»: la hora con segundos y la cuenta atrás de tus dos próximos eventos
+• Widgets del temporizador, de las alarmas, de la agenda del día, de tus bloques y de tus notas
+
+🔒 TUS DATOS SON TUYOS
+• Sin cuentas ni registro, sin anuncios, sin estadísticas ni rastreo
+• Funciona sin conexión
+• Si quieres, sincroniza tus notas, tu agenda y tus tiempos con tu propio repositorio de GitHub y llévalos a otros dispositivos
+• Copias de seguridad que guardas donde tú quieras
+
+✨ A TU GUSTO
+Diseño de cristal con animaciones suaves, modo claro y oscuro, colores personalizables y 10 idiomas.
+
+Temvra es una app de Karteria. ¿Tienes una idea o algo no funciona? Escríbenos a karteria.studio@gmail.com.

@@ -64,4 +64,5 @@ Se prueba en un móvil Android, en un PC con Linux y en tableta.
 - La de Play no lleva el actualizador (`UpdateReceiver`, `upd*` del plugin) ni los permisos `REQUEST_INSTALL_PACKAGES` y `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (`android/app/src/play/AndroidManifest.xml`). Su nombre y paquete están en `android/app/src/play/res/values/strings.xml`.
 - El .aab se genera a mano en GitHub: *Actions › Compilar para Google Play › Run workflow* (`.github/workflows/play.yml`). Sale como artefacto, firmado con la clave de subida (la misma del keystore), y su número de versión es el de esa ejecución. En local: `npm run aab`.
 - El push a `main` sigue compilando solo la versión personal (`assemblePersonalRelease`).
+- La ficha de Play (textos, icono, gráfico destacado y capturas) está en `fastlane/metadata/android/es-ES/` y los pasos para publicar en `PLAY.md`.
 
