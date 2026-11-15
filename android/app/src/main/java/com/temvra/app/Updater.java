@@ -68,11 +68,24 @@ final class Updater {
 
     /** Última versión publicada: {tag, name, body, apkUrl, apkName, size}. El repositorio es público: el token es opcional. */
     static JSONObject latest(String token) throws Exception {
-        HttpURLConnection h = open("https://api.github.com/repos/" + REPO + "/releases/latest", token, "application/vnd.github+json");
+        String url = "https://api.github.com/repos/" + REPO + "/releases/latest";
+        HttpURLConnection h = open(url, token, "application/vnd.github+json");
         int code = h.getResponseCode();
         if ((code == 401 || code == 403) && token != null && !token.isEmpty()) {
             h.disconnect();
-            h = open("https://api.github.com/repos/" + REPO + "/releases/latest", null, "application/vnd.github+json");
+            token = null;
+            h = open(url, null, "application/vnd.github+json");
+            code = h.getResponseCode();
+        }
+        /* Si el repositorio cambia de nombre o de dueño, GitHub responde con una redirección permanente: se sigue.
+           El token solo viaja si la redirección se queda en api.github.com */
+        for (int hops = 0; code / 100 == 3 && hops < 5; hops++) {
+            String loc = h.getHeaderField("Location");
+            h.disconnect();
+            if (loc == null) break;
+            URL next = new URL(new URL(url), loc);
+            url = next.toString();
+            h = open(url, "api.github.com".equals(next.getHost()) ? token : null, "application/vnd.github+json");
             code = h.getResponseCode();
         }
         if (code != 200) throw new Exception(code == 404 || code == 401 ? "auth" : "http " + code);
