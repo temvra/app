@@ -35,7 +35,7 @@ final class Updater {
     private Updater() {}
 
     static final String PREFS = "temvra_update";
-    static final String REPO = "temvra/temvP";
+    static final String REPO = "temvra/app";
     static final String CH = "updates";
     static final int NOTIF_ID = 7301;
 

@@ -3248,7 +3248,7 @@ body:not(.desk) #v-blocks.bkwk .bk-time,body:not(.desk) #v-blocks.bkwk .bk-em{di
       </div>
       <div class="card" style="margin-top:6px">
         <div class="seg" id="upd-mode"><button data-um="ask">Preguntarme antes</button><button data-um="auto">Descargarla sola</button></div>
-        <div class="note" style="margin-top:0">Las versiones salen de las Releases de <b>temvra/temvP</b> en GitHub. No hace falta cuenta ni token.</div>
+        <div class="note" style="margin-top:0">Las versiones salen de las Releases de <b>temvra/app</b> en GitHub. No hace falta cuenta ni token.</div>
         <details style="margin-top:8px"><summary class="sub">Si el repositorio vuelve a ser privado</summary>
           <div class="field"><label for="upd-token">Token de GitHub</label><input type="password" id="upd-token" autocomplete="off" placeholder="Con permiso de lectura" style="flex:1;min-width:0"></div>
           <div class="note" style="margin-top:0">Hace falta un token con permiso de lectura del repositorio (Contents: Read). No se guarda en las copias de seguridad.</div>
@@ -5210,7 +5210,7 @@ async function shareBlob(name,blob,title,text){if(window.VTNative)return VTNativ
    Un archivo «.temvra.json»: al abrirlo desde WhatsApp u otra app se abre Temvra, enseña lo que trae y lo añade con un toque.
    Va como JSON (application/json) porque Android y WhatsApp conocen ese tipo: el archivo llega entero y Temvra sale en «Abrir con».
    Los adjuntos de las notas van dentro; lo que es de cada dispositivo (avisado, pospuesto) no viaja */
-const TVP_APP='https://github.com/temvra/temvP/releases/latest';
+const TVP_APP='https://github.com/temvra/app/releases/latest';
 const TVP_N={notes:['nota','notas'],atts:['adjunto','adjuntos'],timers:['temporizador','temporizadores'],tfolders:['bloque de temporizadores','bloques de temporizadores'],myCircuits:['circuito','circuitos'],myTpl:['plantilla de circuito','plantillas de circuito'],alarms:['alarma','alarmas'],events:['evento','eventos'],appts:['página de citas','páginas de citas']};
 const tvpSum=d=>Object.keys(TVP_N).filter(k=>d[k]&&d[k].length).map(k=>d[k].length+' '+TVP_N[k][d[k].length===1?0:1]).join(', ')||'nada';
 const tvpB64=b=>new Promise((ok,ko)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(',')[1]||'');r.onerror=ko;r.readAsDataURL(b)});
@@ -5219,7 +5219,7 @@ const tvpAttsOf=notes=>S.atts.filter(a=>notes.some(n=>{const b=n.body||'';return
 const tvpNoteData=n=>({notes:[Object.assign({},n,{folder:''})],atts:tvpAttsOf([n]).map(a=>Object.assign({},a,{folder:''}))});
 /* Enlaces: para lo pequeño, un mensaje con un enlace a la página de Temvra en GitHub Pages. Los datos van comprimidos en el propio enlace,
    detrás de «#», así que no pasan por ningún servidor. La página enseña qué es y abre la app con temvra://a?d=… */
-const TVP_WEB='https://temvra.github.io/temvP/a/';
+const TVP_WEB='https://temvra.github.io/app/a/';
 const b64u=a=>{let t='';for(let i=0;i<a.length;i+=8192)t+=String.fromCharCode.apply(null,a.subarray(i,i+8192));return btoa(t).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')};
 const ub64u=t=>{t=t.replace(/-/g,'+').replace(/_/g,'/');while(t.length%4)t+='=';return Uint8Array.from(atob(t),c=>c.charCodeAt(0))};
 async function tvpLink(o){const raw=new TextEncoder().encode(JSON.stringify(o));let d;
@@ -9767,7 +9767,7 @@ const GEL=new WeakMap(),gelOf=el=>{let g=GEL.get(el);if(!g){g={x:0,y:0,s:1,l:0,v
 if(!S.upd)S.upd={on:true,mode:'ask',last:0,token:'',skip:''};
 /* En PC se actualiza sola: se descarga en silencio y se instala al cerrar la app */
 if(window.VTDesktop&&!S.upd.touched)S.upd.mode='auto';
-const UPD_REPO='temvra/temvP';
+const UPD_REPO='temvra/app';
 /* En la versión de Google Play las actualizaciones las hace Play: sin actualizador propio */
 const updPlay=()=>{try{return !!(window.VTBuild&&VTBuild.channel&&VTBuild.channel()==='play')}catch(e){return false}};
 const updTV=()=>!updPlay()&&window.VTNative&&VTNative.hasPlugin&&window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.Temvra||null;

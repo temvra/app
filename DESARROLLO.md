@@ -1,4 +1,4 @@
-# Notas de desarrollo de Temvra (versión personal · temvra/temvP)
+# Notas de desarrollo de Temvra (versión personal · temvra/app)
 
 Temporizador, agenda (Día, Semana, 3 días, Mes, Año, Programación), bloques de trabajo, Notas tipo Obsidian y asistente.
 Una sola base de código para **Android** (Capacitor 8, `com.temvra.app.personal`) y **escritorio** (Electron: Windows .exe y Linux AppImage).
@@ -16,11 +16,12 @@ Se prueba en un móvil Android, en un PC con Linux y en tableta.
 ## Publicación
 - **Cada push a `main` compila y publica una release** (`.github/workflows/android.yml`): la versión es `1.0.<run_number>` y sube el APK, el .exe y el AppImage. No hagas push de trabajo a medias.
 - Los cambios que solo tocan archivos `*.md` no lanzan compilación.
+- El repositorio se llamaba `temvra/temvP`. Al cambiar el nombre de la cuenta, GitHub retiró esa dirección para siempre y la redirige a `temvra/app`: las copias antiguas de la app siguen encontrando las actualizaciones por esa redirección. No intentes recuperar el nombre `temvP` ni `temvra` para este repositorio: están retirados.
 - Commits en español, con un título que diga qué cambia para el usuario.
 - Antes de subir: `node scripts/check-js.mjs` sin errores, prueba en Chromium lo que hayas tocado (móvil y escritorio, sin `pageerror`) y revisa con `git status` que no haya keystores, tokens, `www/` ni archivos de prueba.
 - Después, vigila la compilación hasta el final y comprueba que la release tenga el .apk, el .exe y el .AppImage:
-  - `gh run watch <id> -R temvra/temvP --exit-status` (si falla: `gh run view <id> -R temvra/temvP --log-failed`)
-  - `gh api repos/temvra/temvP/releases?per_page=1 -q '.[0] | .tag_name + " " + .html_url'`
+  - `gh run watch <id> -R temvra/app --exit-status` (si falla: `gh run view <id> -R temvra/app --log-failed`)
+  - `gh api repos/temvra/app/releases?per_page=1 -q '.[0] | .tag_name + " " + .html_url'`
 
 ## Reglas
 - **Nunca** leas, subas ni compartas el keystore, `android/keystore.properties` ni tokens. Los secretos solo viven en los secretos del repositorio (`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`).
