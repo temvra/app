@@ -18,7 +18,7 @@ Se prueba en un móvil Android, en un PC con Linux y en tableta.
 - Los cambios que solo tocan archivos `*.md` no lanzan compilación.
 - El repositorio se llamaba `temvra/temvP`. Al cambiar el nombre de la cuenta, GitHub retiró esa dirección para siempre y la redirige a `temvra/app`: las copias antiguas de la app siguen encontrando las actualizaciones por esa redirección. No intentes recuperar el nombre `temvP` ni `temvra` para este repositorio: están retirados.
 - Los enlaces de compartir antiguos (`temvra.github.io/temvP/a/#…`) los reenvía el repositorio `temvra/temvra.github.io` a `temvra.github.io/app/a/`, conservando lo que va detrás de `#`. No crees en la organización un repositorio que se llame `temvP`.
-- Desde que el repositorio está en la organización, las subidas hechas por Claude no siempre lanzan la compilación. Si no aparece en Actions, lánzala a mano: `gh workflow run android.yml -R temvra/app --ref main`.
+- Desde que el repositorio está en la organización, algunas subidas no lanzan la compilación. Si no aparece en Actions, lánzala a mano: `gh workflow run android.yml -R temvra/app --ref main`.
 - Commits en español, con un título que diga qué cambia para el usuario.
 - Antes de subir: `node scripts/check-js.mjs` sin errores, prueba en Chromium lo que hayas tocado (móvil y escritorio, sin `pageerror`) y revisa con `git status` que no haya keystores, tokens, `www/` ni archivos de prueba.
 - Después, vigila la compilación hasta el final y comprueba que la release tenga el .apk, el .exe y el .AppImage:
