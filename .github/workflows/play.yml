@@ -50,6 +50,16 @@ jobs:
           chmod +x gradlew
           ./gradlew bundlePlayRelease --no-daemon
 
+      # Que sea com.temvra.app y que no se cuele nada que Play no permite (actualizador propio, instalar APKs, exención de batería)
+      - name: Comprobar el manifiesto
+        run: |
+          m=$(find android/app/build/intermediates -path "*playRelease*" -name AndroidManifest.xml | grep -v "/aapt/" | head -1)
+          echo "Manifiesto: $m"
+          grep -o 'package="[^"]*"' "$m"
+          grep -o 'uses-permission[^>]*android:name="[^"]*"' "$m" | sed 's/.*name=/  permiso /'
+          grep -q 'package="com.temvra.app"' "$m" || { echo "::error::El paquete no es com.temvra.app"; exit 1; }
+          if grep -q 'REQUEST_INSTALL_PACKAGES\|REQUEST_IGNORE_BATTERY_OPTIMIZATIONS\|UpdateReceiver' "$m"; then echo "::error::Se ha colado algo que Play no permite"; exit 1; fi
+
       - name: Comprobar el paquete
         run: |
           f=android/app/build/outputs/bundle/playRelease/app-play-release.aab
