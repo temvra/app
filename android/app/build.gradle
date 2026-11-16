@@ -3,8 +3,7 @@ apply plugin: 'com.android.application'
 def ksProps=new Properties()
 def ksFile=rootProject.file('keystore.properties')
 if(ksFile.exists()){ksFile.withInputStream{ksProps.load(it)}}
-// TEMVRA_BUILD lo calculan los flujos de Actions (número de ejecución + BASE_VERSION)
-def buildNum=(System.getenv('TEMVRA_BUILD')?:System.getenv('GITHUB_RUN_NUMBER')?:'1') as int
+def buildNum=(System.getenv('GITHUB_RUN_NUMBER')?:'1') as int
 
 android {
     namespace = "com.temvra.app"

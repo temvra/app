@@ -14,7 +14,7 @@ Se prueba en un móvil Android, en un PC con Linux y en tableta.
 - `www/` y `android/app/src/main/assets/public/` se generan: no se editan a mano.
 
 ## Publicación
-- **Cada push a `main` compila y publica una release con el APK** (`.github/workflows/android.yml`). La versión es `1.0.<run_number + 74>`: el contador de ejecuciones volvió a 1 al pasar el repositorio a la organización y la última versión de antes fue la 1.0.74 (`BASE_VERSION`, también en `play.yml`; `build.gradle` lee `TEMVRA_BUILD`). Las de PC (.exe y AppImage) solo se compilan al lanzar el flujo a mano con la casilla de PC: `gh workflow run android.yml -R temvra/app --ref main -f pc=true`. No hagas push de trabajo a medias.
+- **Cada push a `main` compila y publica una release con el APK** (`.github/workflows/android.yml`). La versión es `1.0.<run_number>` (el contador siguió igual al pasar el repositorio a la organización). Las de PC (.exe y AppImage) solo se compilan al lanzar el flujo a mano con la casilla de PC: `gh workflow run android.yml -R temvra/app --ref main -f pc=true`. No hagas push de trabajo a medias.
 - Los cambios que solo tocan archivos `*.md` no lanzan compilación.
 - El repositorio se llamaba `temvra/temvP`. Al cambiar el nombre de la cuenta, GitHub retiró esa dirección para siempre y la redirige a `temvra/app`: las copias antiguas de la app siguen encontrando las actualizaciones por esa redirección. No intentes recuperar el nombre `temvP` ni `temvra` para este repositorio: están retirados.
 - Los enlaces de compartir antiguos (`temvra.github.io/temvP/a/#…`) los reenvía el repositorio `temvra/temvra.github.io` a `temvra.github.io/app/a/`, conservando lo que va detrás de `#`. No crees en la organización un repositorio que se llame `temvP`.

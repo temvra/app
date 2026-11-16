@@ -8,19 +8,11 @@ on:
 permissions:
   contents: read
 
-# El contador de ejecuciones volvió a 1 al pasar el repositorio a la organización temvra (15-11-2026).
-# Se suma lo mismo que en android.yml para que el versionCode siga subiendo: Play rechaza uno ya usado.
-env:
-  BASE_VERSION: 74
-
 jobs:
   aab:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
-
-      - name: Número de versión
-        run: echo "TEMVRA_BUILD=$((GITHUB_RUN_NUMBER + BASE_VERSION))" >> "$GITHUB_ENV"
 
       - uses: actions/setup-node@v5
         with:
@@ -74,11 +66,11 @@ jobs:
           test -s "$f"
           unzip -l "$f" | grep -q "META-INF/.*\.RSA\|META-INF/.*\.EC\|META-INF/.*\.DSA" || { echo "::error::El paquete no está firmado"; exit 1; }
           mkdir -p out
-          cp "$f" "out/Temvra-1.0.${TEMVRA_BUILD}.aab"
+          cp "$f" "out/Temvra-1.0.${{ github.run_number }}.aab"
           ls -la out
 
       - uses: actions/upload-artifact@v5
         with:
-          name: Temvra-GooglePlay-1.0.${{ env.TEMVRA_BUILD }}
+          name: Temvra-GooglePlay-1.0.${{ github.run_number }}
           path: out/*.aab
           retention-days: 90
