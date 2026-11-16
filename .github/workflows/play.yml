@@ -1,9 +1,16 @@
 name: Compilar para Google Play
 
 # Se lanza a mano (pestaña Actions › «Compilar para Google Play» › Run workflow) cuando quieras subir una versión a Play.
-# Genera el paquete .aab de com.temvra.app firmado con la clave de subida; no publica ninguna Release.
+# Genera el paquete .aab de com.temvra.app firmado con la clave de subida. Con la casilla marcada, publica además
+# el APK de esta misma versión en temvra/descargas (público y sin código), con el secreto DESCARGAS_TOKEN:
+# un token de GitHub con Contents en Read and write solo para temvra/descargas.
 on:
   workflow_dispatch:
+    inputs:
+      descargas:
+        description: 'Publicar también el APK en temvra/descargas (público)'
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -43,12 +50,13 @@ jobs:
           echo "$KEYSTORE_BASE64" | base64 -d > android/app/temvra-release.keystore
           printf "storeFile=temvra-release.keystore\nstorePassword=%s\nkeyAlias=vuelta\nkeyPassword=%s\n" "$KEYSTORE_PASSWORD" "$KEYSTORE_PASSWORD" > android/keystore.properties
 
-      # El número de versión sale del número de esta ejecución: 1, 2, 3… Play exige que cada subida tenga uno mayor
-      - name: Compilar el paquete para Play
+      # El número de versión sale del número de esta ejecución: 1, 2, 3… Play exige que cada subida tenga uno mayor.
+      # El APK es la misma versión, para temvra/descargas
+      - name: Compilar el paquete para Play y el APK
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew bundlePlayRelease --no-daemon
+          ./gradlew bundlePlayRelease assemblePlayRelease --no-daemon
 
       # Que sea com.temvra.app y que no se cuele nada que Play no permite (actualizador propio, instalar APKs, exención de batería)
       - name: Comprobar el manifiesto
@@ -69,8 +77,50 @@ jobs:
           cp "$f" "out/Temvra-1.0.${{ github.run_number }}.aab"
           ls -la out
 
+      # Firmado con la clave de la app, no con la de depuración: si no, no se podría instalar encima de la versión anterior
+      - name: Comprobar el APK
+        run: |
+          f=android/app/build/outputs/apk/play/release/app-play-release.apk
+          test -s "$f"
+          signer="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner"
+          "$signer" verify --print-certs "$f" | tee firma.txt | grep -i 'certificate DN'
+          if grep -qi 'Android Debug' firma.txt; then echo "::error::El APK está firmado con la clave de depuración"; exit 1; fi
+          mkdir -p descargas
+          cp "$f" descargas/Temvra.apk
+
       - uses: actions/upload-artifact@v5
         with:
           name: Temvra-GooglePlay-1.0.${{ github.run_number }}
           path: out/*.aab
           retention-days: 90
+
+      # Mismo nombre de archivo en todas las versiones para que el enlace directo no cambie:
+      # https://github.com/temvra/descargas/releases/latest/download/Temvra.apk
+      - name: Notas para descargas
+        if: inputs.descargas
+        env:
+          DESCARGAS_TOKEN: ${{ secrets.DESCARGAS_TOKEN }}
+        run: |
+          if [ -z "$DESCARGAS_TOKEN" ]; then echo "::error::Falta el secreto DESCARGAS_TOKEN en el repositorio"; exit 1; fi
+          cat > notas-descargas.md <<'FIN'
+          **Temvra para Android**, la misma versión que se publica en Google Play.
+
+          1. Descarga **Temvra.apk** desde el móvil y ábrelo.
+          2. Si Android te lo pide, permite instalar apps desde el navegador.
+
+          Para actualizar, instala la versión nueva encima: conservas tus datos. Esta versión no se actualiza sola.
+          Si más adelante prefieres instalar Temvra desde Google Play, Android te pedirá desinstalar antes esta versión: haz primero una copia de seguridad desde la app.
+          FIN
+
+      - name: Publicar el APK en temvra/descargas
+        if: inputs.descargas
+        uses: softprops/action-gh-release@v2
+        with:
+          repository: temvra/descargas
+          token: ${{ secrets.DESCARGAS_TOKEN }}
+          target_commitish: main
+          tag_name: v1.0.${{ github.run_number }}
+          name: Temvra 1.0.${{ github.run_number }}
+          body_path: notas-descargas.md
+          files: descargas/Temvra.apk
+          make_latest: true

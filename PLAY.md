@@ -6,6 +6,7 @@ Cuenta de desarrollador: **Karteria** (karteria.studio@gmail.com, cuenta persona
 1. En GitHub: **Actions › Compilar para Google Play › Run workflow**.
 2. Cuando termine, abre esa ejecución y descarga el artefacto **Temvra-GooglePlay-1.0.N** (un .zip con el .aab dentro).
 3. Cada subida a Play necesita un número mayor: basta con lanzar el flujo otra vez.
+4. Con la casilla «Publicar también el APK en temvra/descargas» (viene marcada), el flujo publica además el APK de esa misma versión en [temvra/descargas](https://github.com/temvra/descargas), público y sin código. Enlace directo a la última: `https://github.com/temvra/descargas/releases/latest/download/Temvra.apk`. Usa el secreto `DESCARGAS_TOKEN` (token de grano fino con Contents en Read and write solo para temvra/descargas).
 
 El paquete va firmado con la clave de subida (la misma del keystore). La primera vez, Play Console ofrece **la firma de apps de Google Play**: acéptala.
 
