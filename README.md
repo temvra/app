@@ -3,6 +3,8 @@
 Copia personal de Temvra (`com.temvra.app.personal`): se instala junto a la versión pública sin pisarla.
 Aquí se prueban cosas que todavía no van a la versión de Google Play.
 
+El repositorio es **privado**. Las páginas públicas de la app (descarga y compartir) están en `temvra/temvra.github.io`, carpeta `app/`.
+
 ## Base
 
 Temporizador en bucle, circuitos, alarmas, agenda con bloques de trabajo y notas.
@@ -17,7 +19,7 @@ La interfaz está en `src/app.html` y la parte de Android la pone
    (va aparte; **no lo subas al repositorio**).
 3. Cada vez que se sube un cambio, GitHub compila la app sola (pestaña **Actions**, unos 5–8 minutos).
    También puedes lanzarlo a mano: Actions → «Compilar APK» → Run workflow.
-4. Entra en **Releases** desde el móvil, descarga `Temvra-1.0.N.apk` e instálalo.
+4. Entra en **Releases** desde el móvil, descarga `Temvra-Personal-1.0.N.apk` e instálalo.
    La primera vez Android te pedirá permitir instalar apps desde el navegador.
 5. Las versiones nuevas se instalan encima y conservan tus datos porque se firman con la misma clave.
    Guarda el archivo de la clave en un sitio seguro: si se pierde, habría que desinstalar para actualizar.

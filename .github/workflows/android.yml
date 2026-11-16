@@ -1,5 +1,8 @@
 name: Compilar APK
 
+# El repositorio es privado y GitHub da 2.000 minutos de compilación gratis al mes (los de Windows cuentan doble).
+# Por eso cada push compila solo el APK, y las versiones de PC se compilan cuando se lanza a mano:
+# Actions › «Compilar APK» › Run workflow (la casilla de PC viene marcada).
 on:
   push:
     branches: [main]
@@ -7,15 +10,29 @@ on:
     paths-ignore:
       - '**/*.md'
   workflow_dispatch:
+    inputs:
+      pc:
+        description: 'Compilar también las versiones de PC (Windows y Linux)'
+        type: boolean
+        default: true
 
 permissions:
   contents: write
+
+# El repositorio pasó a la organización temvra el 15-11-2026 y el contador de ejecuciones volvió a empezar en 1.
+# La última versión de antes fue la 1.0.74: se suma para que los números sigan subiendo. Si bajaran,
+# Android no instalaría la versión nueva encima de la anterior y el actualizador no la vería.
+env:
+  BASE_VERSION: 74
 
 jobs:
   apk:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
+
+      - name: Número de versión
+        run: echo "TEMVRA_BUILD=$((GITHUB_RUN_NUMBER + BASE_VERSION))" >> "$GITHUB_ENV"
 
       - uses: actions/setup-node@v5
         with:
@@ -49,6 +66,7 @@ jobs:
             echo "::warning::Sin la clave de firma: el APK se firma con una clave temporal y no se podrá instalar encima de la versión anterior."
           fi
 
+      # build.gradle toma versionCode y versionName de TEMVRA_BUILD
       - name: Compilar
         working-directory: android
         run: |
@@ -58,41 +76,53 @@ jobs:
       - name: Renombrar APK
         run: |
           mkdir -p out
-          cp android/app/build/outputs/apk/personal/release/app-personal-release.apk "out/Temvra-Personal-1.0.${{ github.run_number }}.apk"
+          cp android/app/build/outputs/apk/personal/release/app-personal-release.apk "out/Temvra-Personal-1.0.${TEMVRA_BUILD}.apk"
 
-      # Si falla, se publica igualmente el APK
+      # Solo al lanzarlo a mano. Si falla, se publica igualmente el APK
       - name: Compilar la app de PC
+        if: github.event_name == 'workflow_dispatch' && inputs.pc
         continue-on-error: true
         working-directory: desktop
         run: |
           npm ci
-          npm run appimage -- -c.extraMetadata.version=1.0.${{ github.run_number }}
-          cp dist/*.AppImage "../out/Temvra-Personal-1.0.${{ github.run_number }}.AppImage"
+          npm run appimage -- -c.extraMetadata.version=1.0.${TEMVRA_BUILD}
+          cp dist/*.AppImage "../out/Temvra-Personal-1.0.${TEMVRA_BUILD}.AppImage"
 
-      - uses: actions/upload-artifact@v5
-        with:
-          name: Temvra-Personal
-          path: out/*
+      - name: Notas de la versión
+        env:
+          PC: ${{ github.event_name == 'workflow_dispatch' && inputs.pc }}
+        run: |
+          {
+            echo '**Móvil:** descarga el archivo .apk de abajo desde el móvil e instálalo. Se instala encima de la versión anterior sin perder tus datos.'
+            if [ "$PC" = "true" ]; then
+              echo '**PC (Windows):** descarga el archivo .exe y ejecútalo. Windows avisará de que la app no está firmada: pulsa «Más información» y «Ejecutar de todos modos».'
+              echo '**PC (Linux):** descarga el archivo .AppImage, dale permiso de ejecución y ábrelo.'
+            fi
+          } > notas.md
 
+      # Sin artefactos de Actions: en un repositorio privado solo caben 500 MB y las descargas ya van en la versión publicada
       - name: Publicar versión para descargar
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: Temvra Personal 1.0.${{ github.run_number }}
-          body: |
-            **Móvil:** descarga el archivo .apk de abajo desde el móvil e instálalo. Se instala encima de la versión anterior sin perder tus datos.
-            **PC (Windows):** descarga el archivo .exe y ejecútalo. Windows avisará de que la app no está firmada: pulsa «Más información» y «Ejecutar de todos modos».
-            **PC (Linux):** descarga el archivo .AppImage, dale permiso de ejecución y ábrelo.
+          tag_name: v1.0.${{ env.TEMVRA_BUILD }}
+          name: Temvra Personal 1.0.${{ env.TEMVRA_BUILD }}
+          body_path: notas.md
           files: out/*
           make_latest: true
 
-  # Va aparte porque el instalador de Windows se compila en Windows. Si falla, el APK y el AppImage ya están publicados
+  # Va aparte porque el instalador de Windows se compila en Windows. Solo al lanzarlo a mano.
+  # Si falla, el APK y el AppImage ya están publicados
   windows:
     needs: apk
+    if: github.event_name == 'workflow_dispatch' && inputs.pc
     runs-on: windows-latest
     continue-on-error: true
     steps:
       - uses: actions/checkout@v5
+
+      - name: Número de versión
+        shell: bash
+        run: echo "TEMVRA_BUILD=$((GITHUB_RUN_NUMBER + BASE_VERSION))" >> "$GITHUB_ENV"
 
       - uses: actions/setup-node@v5
         with:
@@ -110,10 +140,10 @@ jobs:
         shell: bash
         run: |
           npm ci
-          npm run win -- -c.extraMetadata.version=1.0.${{ github.run_number }}
+          npm run win -- -c.extraMetadata.version=1.0.${TEMVRA_BUILD}
 
       - name: Añadirla a la versión
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.${{ github.run_number }}
+          tag_name: v1.0.${{ env.TEMVRA_BUILD }}
           files: desktop/dist/*.exe

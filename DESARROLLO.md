@@ -14,14 +14,15 @@ Se prueba en un móvil Android, en un PC con Linux y en tableta.
 - `www/` y `android/app/src/main/assets/public/` se generan: no se editan a mano.
 
 ## Publicación
-- **Cada push a `main` compila y publica una release** (`.github/workflows/android.yml`): la versión es `1.0.<run_number>` y sube el APK, el .exe y el AppImage. No hagas push de trabajo a medias.
+- **Cada push a `main` compila y publica una release con el APK** (`.github/workflows/android.yml`). La versión es `1.0.<run_number + 74>`: el contador de ejecuciones volvió a 1 al pasar el repositorio a la organización y la última versión de antes fue la 1.0.74 (`BASE_VERSION`, también en `play.yml`; `build.gradle` lee `TEMVRA_BUILD`). Las de PC (.exe y AppImage) solo se compilan al lanzar el flujo a mano con la casilla de PC: `gh workflow run android.yml -R temvra/app --ref main -f pc=true`. No hagas push de trabajo a medias.
 - Los cambios que solo tocan archivos `*.md` no lanzan compilación.
 - El repositorio se llamaba `temvra/temvP`. Al cambiar el nombre de la cuenta, GitHub retiró esa dirección para siempre y la redirige a `temvra/app`: las copias antiguas de la app siguen encontrando las actualizaciones por esa redirección. No intentes recuperar el nombre `temvP` ni `temvra` para este repositorio: están retirados.
 - Los enlaces de compartir antiguos (`temvra.github.io/temvP/a/#…`) los reenvía el repositorio `temvra/temvra.github.io` a `temvra.github.io/app/a/`, conservando lo que va detrás de `#`. No crees en la organización un repositorio que se llame `temvP`.
+- **El repositorio es privado.** En el plan gratuito, Actions da 2.000 minutos al mes (los de Windows cuentan doble) y 500 MB para artefactos: por eso cada push compila solo el APK y `android.yml` no sube artefactos. Las páginas públicas (descarga en `temvra.github.io/app/` y compartir en `/app/a/`) están en el repositorio `temvra/temvra.github.io`, carpeta `app/`: `docs/` era la copia de aquí y deja de publicarse con el repositorio privado, así que no la edites. El actualizador de la versión personal necesita un token de solo lectura (Ajustes › Actualizaciones).
 - Desde que el repositorio está en la organización, algunas subidas no lanzan la compilación. Si no aparece en Actions, lánzala a mano: `gh workflow run android.yml -R temvra/app --ref main`.
 - Commits en español, con un título que diga qué cambia para el usuario.
 - Antes de subir: `node scripts/check-js.mjs` sin errores, prueba en Chromium lo que hayas tocado (móvil y escritorio, sin `pageerror`) y revisa con `git status` que no haya keystores, tokens, `www/` ni archivos de prueba.
-- Después, vigila la compilación hasta el final y comprueba que la release tenga el .apk, el .exe y el .AppImage:
+- Después, vigila la compilación hasta el final y comprueba que la release tenga el .apk (y el .exe y el .AppImage si lanzaste también las de PC):
   - `gh run watch <id> -R temvra/app --exit-status` (si falla: `gh run view <id> -R temvra/app --log-failed`)
   - `gh api repos/temvra/app/releases?per_page=1 -q '.[0] | .tag_name + " " + .html_url'`
 
