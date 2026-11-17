@@ -467,11 +467,22 @@ public class Widgets {
         publish(m, id, v);
         reloadList(m, id, R.id.wline_list);
 
-        // Al colocarlo se centra en la hora actual; después solo con el botón, para respetar el scroll
-        if (!sp(c).getBoolean("line_" + id, false)) {
-            sp(c).edit().putBoolean("line_" + id, true).apply();
+        // Al colocarlo se centra en la hora actual; después solo con el botón, para respetar el scroll.
+        // Tras actualizar la app o reiniciar el móvil el lanzador vuelve a crear la lista desde las 00:00: ahí se centra otra vez
+        String stamp = lineStamp(c);
+        if (!stamp.equals(sp(c).getString("line_s_" + id, ""))) {
+            sp(c).edit().putString("line_s_" + id, stamp).putBoolean("line_" + id, true).apply();
             scrollToNow(c, id, 900);
         }
+    }
+
+    /** Cambia cuando se instala otra versión o se reinicia el móvil: las dos veces en que el lanzador rehace la lista */
+    private static String lineStamp(Context c) {
+        long upd = 0;
+        int boot = 0;
+        try { upd = c.getPackageManager().getPackageInfo(c.getPackageName(), 0).lastUpdateTime; } catch (Exception e) { }
+        try { boot = android.provider.Settings.Global.getInt(c.getContentResolver(), android.provider.Settings.Global.BOOT_COUNT, 0); } catch (Exception e) { }
+        return upd + "/" + boot;
     }
 
     /**

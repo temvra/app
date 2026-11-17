@@ -95,19 +95,28 @@ async function burbujaNota(a){
 
 /* «Fecha de hoy» de la barra de formato y la fecha automática de una nota (sigue en la nota abierta) */
 async function fechaHoy(a){
-  const r=await a.ev(`(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms)),n=VTAPI.state().notes.find(x=>x.id==='nqa1'),ta=document.getElementById('ne-text'),edita=async e=>{if(document.getElementById('ne-edit').hidden===e){document.getElementById('ne-mode').click();await w(450)}},fecha=()=>{document.querySelector('#ne-tools [data-tool=date]').click();return w(500)};
-    await edita(false);n.body='Uno\\nDos\\n';delete n.dayAuto;delete n.daySkip;await edita(true);
+  const r=await a.ev(`(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms)),S=VTAPI.state(),n=S.notes.find(x=>x.id==='nqa1'),ta=document.getElementById('ne-text'),hoja=document.getElementById('ob-sheet'),edita=async e=>{if(document.getElementById('ne-edit').hidden===e){document.getElementById('ne-mode').click();await w(450)}},fecha=()=>{document.querySelector('#ne-tools [data-tool=date]').click();return w(500)},
+      boton=t=>hoja.hidden?null:[...hoja.querySelectorAll('button')].find(x=>x.textContent.includes(t)),pulsa=async t=>{const b=boton(t);if(b){b.click();await w(500)}return !!b},alFinal=()=>{ta.focus();ta.setSelectionRange(ta.value.length,ta.value.length)},
+      limpia=async()=>{hoja.hidden=true;await edita(false);n.body='Uno\\nDos\\n';delete n.dayAuto;delete n.daySkip;delete n.dayAsked;delete S.dayAskOff;await edita(true)};
+    await limpia();
     const orden=[...document.querySelectorAll('#ne-tools [data-tool]')].slice(0,4).map(b=>b.dataset.tool).join(',');
-    ta.focus();ta.setSelectionRange(ta.value.length,ta.value.length);await fecha();const enc=/^Uno\\nDos\\n## \\S[^\\n]*\\d{4}\\n$/.test(ta.value);
-    ta.setSelectionRange(1,1);await fecha();const dentro=/^U[^#\\n]+\\d{4}no\\n/.test(ta.value);
-    await edita(false);n.body='Uno\\nDos\\n';
-    document.getElementById('ne-more').click();await w(600);const m=[...document.querySelectorAll('#ob-sheet button')].find(x=>x.textContent.includes('Fecha automática cada día'));if(!m)return {menu:false};m.click();await w(600);
+    alFinal();await fecha();const enc=/^Uno\\nDos\\n## \\S[^\\n]*\\d{4}\\n$/.test(ta.value),pregunta=!!boton('Sí, cada día');
+    await pulsa('No, solo cuando');const dijoNo=n.dayAsked===1&&!n.dayAuto&&hoja.hidden&&document.activeElement===ta;
+    ta.setSelectionRange(1,1);await fecha();const dentro=/^U[^#\\n]+\\d{4}no\\n/.test(ta.value),dentroSinHoja=hoja.hidden;
+    alFinal();await fecha();const noRepite=hoja.hidden&&(ta.value.match(/^## /gm)||[]).length===2;
+    await limpia();alFinal();await fecha();await pulsa('No volver a preguntar');const nunca=S.dayAskOff===1&&!n.dayAsked&&!n.dayAuto;alFinal();await fecha();const nuncaSinHoja=hoja.hidden;
+    await limpia();alFinal();await fecha();await pulsa('Sí, cada día');const dijoSi=n.dayAuto===true&&(ta.value.match(/^## /gm)||[]).length===1;
+    document.getElementById('ne-more').click();await w(600);let m=boton('Fecha automática cada día');const marcada=!!(m&&m.querySelector('.obg-ck'));if(m){m.click();await w(600)}const quitada=!n.dayAuto;
+    await limpia();await edita(false);n.body='Uno\\nDos\\n';
+    document.getElementById('ne-more').click();await w(600);m=boton('Fecha automática cada día');if(!m)return {menu:false};const sinMarca=!m.querySelector('.obg-ck');m.click();await w(600);
     await edita(true);const enEditor=/^Uno\\nDos\\n\\n## \\S[^\\n]*\\n$/.test(ta.value),sinGuardar=n.body==='Uno\\nDos\\n';
     ta.focus();ta.setSelectionRange(0,0);document.execCommand('insertText',false,'X');await w(700);const corregir=n.body==='XUno\\nDos\\n';
     ta.setSelectionRange(ta.value.length,ta.value.length);document.execCommand('insertText',false,'hoy');await w(700);const escrito=/^XUno\\nDos\\n\\n## \\S[^\\n]*\\nhoy$/.test(n.body);
     await edita(false);await edita(true);const unaVez=(ta.value.match(/^## /gm)||[]).length===1;
-    await edita(false);delete n.dayAuto;return {menu:true,orden,enc,dentro,enEditor,sinGuardar,corregir,escrito,unaVez}})()`);
+    await edita(false);delete n.dayAuto;delete n.dayAsked;return {menu:true,orden,enc,dentro,pregunta,dijoNo,dentroSinHoja,noRepite,nunca,nuncaSinHoja,dijoSi,marcada,quitada,sinMarca,enEditor,sinGuardar,corregir,escrito,unaVez}})()`);
   ok(r.orden==='undo,redo,head,date'&&r.enc&&r.dentro,'notas: «Fecha de hoy» está al principio de la barra; en una línea vacía es un encabezado y dentro de un texto va tal cual',r);
+  ok(r.pregunta&&r.dijoNo&&r.dentroSinHoja&&r.noRepite&&r.nunca&&r.nuncaSinHoja,'notas: al poner una fecha pregunta si se quiere cada día; con «No» no insiste en esa nota y se puede callar del todo',r);
+  ok(r.dijoSi&&r.marcada&&r.quitada&&r.sinMarca,'notas: con «Sí, cada día» queda activada sin repetir la fecha, y el menú ⋮ la marca y la quita',r);
   ok(r.menu&&r.enEditor&&r.sinGuardar&&r.corregir,'notas: la fecha automática aparece al editar y no se guarda mientras no se escriba debajo',r);
   ok(r.escrito&&r.unaVez,'notas: al escribir debajo se guarda con su fecha, una sola vez por día',r)}
 
