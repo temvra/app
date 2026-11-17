@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Solo en las compilaciones de depuración: la sonda que pinta los widgets dentro de la app para poder verlos y medirlos -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <activity
+            android:name="com.temvra.app.WidgetProbe"
+            android:exported="true"
+            android:label="Sonda de widgets"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar" />
+    </application>
+</manifest>

@@ -31,7 +31,20 @@ public class Widgets {
     static final String DAY = "day", BLOCKS = "blocks", NOTES = "notes", LINE = "line", ALARMS = "alarms", REG = "reg";
     static final int DEF_ACCENT = 0xFFC6C4F4;
 
+    /* Solo los usa la sonda de depuración (src/debug, no va en lo publicado): datos, tamaño de letra y medidas de prueba, y dónde dejar las vistas en vez de publicarlas */
+    static JSONObject probeData;
+    static float probeFs;
+    static Bundle probeOpts;
+    static List<RemoteViews> probeOut;
+
+    static Bundle opts(AppWidgetManager m, int id) { return probeOpts != null ? probeOpts : m.getAppWidgetOptions(id); }
+
+    private static void publish(AppWidgetManager m, int id, RemoteViews v) {
+        if (probeOut != null) probeOut.add(v); else m.updateAppWidget(id, v);
+    }
+
     static JSONObject data(Context c) {
+        if (probeData != null) return probeData;
         try {
             String s = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY, null);
             return s == null ? new JSONObject() : new JSONObject(s);
@@ -98,10 +111,51 @@ public class Widgets {
 
     private static float clamp(float v, float lo, float hi) { return Math.max(lo, Math.min(hi, v)); }
 
+    /** Tamaño de letra de los widgets que se elige en Ajustes: 1 es el normal. */
+    static float fs(JSONObject d) { return clamp(probeFs > 0 ? probeFs : (float) d.optDouble("fs", 1), .7f, 1.8f); }
+
+    /** Para el texto que va en una caja de alto o ancho fijo: antes de Android 12 la caja no se puede agrandar desde aquí, así que crece menos. */
+    static float fsBox(float k) { return Build.VERSION.SDK_INT >= 31 ? k : Math.min(k, 1.12f); }
+
+    static void size(RemoteViews v, int id, float sp) { v.setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_SP, sp); }
+
+    private static android.graphics.Typeface sysFace;
+
+    /**
+     * Pincel con la letra con la que el sistema pinta los textos. No siempre es la de un Paint recién creado: en ColorOS, con una
+     * fuente elegida por el usuario, los textos salen más anchos que lo que ese Paint mide, y lo que se recortaba para caber en una línea ocupaba dos.
+     */
+    static android.graphics.Paint textPaint(Context c) {
+        android.graphics.Paint p = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+        try {
+            if (sysFace == null) sysFace = new android.widget.TextView(c.getApplicationContext()).getTypeface();
+            if (sysFace != null) p.setTypeface(sysFace);
+        } catch (Throwable ignored) {}
+        return p;
+    }
+
+    /**
+     * Alto en dp de una línea de texto de ese tamaño con la letra del sistema, con o sin el margen de la fuente (includeFontPadding).
+     * Depende del móvil y de la letra que haya elegido el usuario: con una proporción fija, en algunos el texto salía cortado.
+     */
+    static float lineDp(Context c, float sp, boolean fontPadding) {
+        android.util.DisplayMetrics dm = c.getResources().getDisplayMetrics();
+        android.graphics.Paint p = textPaint(c);
+        p.setTextSize(sp * dm.scaledDensity);
+        android.graphics.Paint.FontMetrics f = p.getFontMetrics();
+        return (fontPadding ? f.bottom - f.top : f.descent - f.ascent) / dm.density;
+    }
+
+    /** Líneas de ese tamaño que caben en el alto libre de una celda del mes (interlineado de 0,92, como en su layout). */
+    private static int monthFit(Context c, float room, float sp) {
+        float line = lineDp(c, sp, false);
+        return room < line ? 0 : 1 + (int) ((room - line) / (line * .92f));
+    }
+
     /* ---------- Temporizador: toda la información, proporcional al tamaño ---------- */
     static RemoteViews timer(Context c, JSONObject d, AppWidgetManager m, int id) {
         RemoteViews v = new RemoteViews(c.getPackageName(), R.layout.widget_timer);
-        Bundle o = m.getAppWidgetOptions(id);
+        Bundle o = opts(m, id);
         int w = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 180), h = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 180);
         JSONObject t = d.optJSONObject("timer");
         long now = System.currentTimeMillis();
@@ -117,7 +171,13 @@ public class Widgets {
             else { running = false; remain = period; }
         }
         int color = accent(d);
-        float digits = clamp(Math.min(h * .30f, w * .24f), 26, 110), small = clamp(digits * .28f, 12, 26);
+        /* Las cifras ya ocupan lo que cabe: con letra grande solo crecen el nombre y el estado; con letra pequeña encoge todo */
+        float k = fs(d), digits = clamp(Math.min(h * .30f, w * .24f), 26, 110), small = clamp(digits * .28f, 12, 26) * Math.min(k, 1.3f);
+        digits *= Math.min(k, 1f);
+        /* Lo que queda de alto para las cifras: 20 de márgenes, el nombre, el estado, la barra (14), los botones y 3 dp de margen */
+        float btns = Build.VERSION.SDK_INT >= 31 ? clamp(h * .26f, 40, 96) : 52f;
+        float room = h - 23f - lineDp(c, small, true) - lineDp(c, small * .85f, true) - 14f - btns;
+        digits = Math.min(digits, Math.max(20f, room / (lineDp(c, 100f, true) / 100f)));
         v.setTextViewText(R.id.w_name, name);
         v.setTextViewText(R.id.w_lap, (running ? "En marcha" : "Listo") + " · Vuelta " + lap + (loop ? " · Bucle" : ""));
         v.setTextViewTextSize(R.id.w_name, TypedValue.COMPLEX_UNIT_SP, small);
@@ -153,7 +213,7 @@ public class Widgets {
 
     /* ---------- Alarmas: la lista completa, como en la app ---------- */
     static void updateAlarm(Context c, AppWidgetManager m, int id) {
-        Bundle o = m.getAppWidgetOptions(id);
+        Bundle o = opts(m, id);
         int w = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 180), h = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 110);
         float scale = clamp(Math.min(w / 180f, h / 110f), .8f, 1.8f);
         JSONObject d = data(c);
@@ -161,6 +221,9 @@ public class Widgets {
         RemoteViews v = new RemoteViews(c.getPackageName(), R.layout.widget_alarm);
         v.setTextViewText(R.id.wa_next, next != null && next.optLong("at", 0) > System.currentTimeMillis() ? next.optString("time", "") + " · " + next.optString("sub", "") : "Sin alarmas activas");
         v.setTextColor(R.id.wa_head, accent(d));
+        float kh = Math.min(fs(d), 1.3f);
+        size(v, R.id.wa_head, 14f * kh);
+        size(v, R.id.wa_next, 11.5f * kh);
         v.setInt(R.id.wa_add, "setColorFilter", accent(d));
         v.setViewVisibility(R.id.wa_headrow, h < 70 ? View.GONE : View.VISIBLE);
         v.setOnClickPendingIntent(R.id.wa_headrow, open(c, "alarms", 30));
@@ -171,7 +234,7 @@ public class Widgets {
         setList(c, v, R.id.wa_list, svc);
         v.setEmptyView(R.id.wa_list, R.id.wa_empty);
         v.setPendingIntentTemplate(R.id.wa_list, actionTemplate(c, 4000 + id % 1000));
-        m.updateAppWidget(id, v);
+        publish(m, id, v);
         reloadList(m, id, R.id.wa_list);
     }
 
@@ -265,7 +328,7 @@ public class Widgets {
 
     static void updateList(Context c, AppWidgetManager m, int id, String type) {
         JSONObject d = data(c);
-        Bundle o = m.getAppWidgetOptions(id);
+        Bundle o = opts(m, id);
         int h = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 180), w = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250);
         boolean small = h < 90, narrow = w < 190;
         int color = accent(d);
@@ -279,6 +342,10 @@ public class Widgets {
         v.setViewVisibility(R.id.wl_head, small ? View.GONE : View.VISIBLE);
         v.setTextViewText(R.id.wl_title, title);
         v.setTextColor(R.id.wl_title, color);
+        float k = fs(d), kh = Math.min(k, 1.4f);
+        size(v, R.id.wl_title, 14f * kh);
+        size(v, R.id.wl_date, 12f * kh);
+        size(v, R.id.wl_empty, 13f * k);
         String[] days = {"Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"};
         v.setTextViewText(R.id.wl_date, days[cal.get(Calendar.DAY_OF_WEEK) - 1] + " " + cal.get(Calendar.DAY_OF_MONTH));
         v.setViewVisibility(R.id.wl_add, narrow ? View.GONE : View.VISIBLE);
@@ -302,7 +369,7 @@ public class Widgets {
             android.content.SharedPreferences sp = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
             if (sp.getInt(key, -1) != idx) { sp.edit().putInt(key, idx).apply(); v.setScrollPosition(R.id.wl_list, idx); }
         }
-        m.updateAppWidget(id, v);
+        publish(m, id, v);
         reloadList(m, id, R.id.wl_list);
     }
 
@@ -320,8 +387,11 @@ public class Widgets {
         return Math.max(1, Math.min(max, sp(c).getInt("line_n_" + id, max)));
     }
 
+    /** Alto en dp de cada franja de 15 min: crece con la letra donde el sistema deja cambiarlo (Android 12 o posterior). */
+    static float lineRow(float k) { return Build.VERSION.SDK_INT >= 31 ? Math.round(19f * k) : 19f; }
+
     static int lineWidth(AppWidgetManager m, int id) {
-        Bundle o = m.getAppWidgetOptions(id);
+        Bundle o = opts(m, id);
         return Math.max(120, o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 300));
     }
 
@@ -351,13 +421,14 @@ public class Widgets {
     }
 
     /** Días que se ven encima de la lista. */
-    private static void lineHeader(RemoteViews v, int color, int off, int n) {
+    private static void lineHeader(RemoteViews v, int color, int off, int n, float kh) {
         String[] names = {"Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"};
         int[] heads = {R.id.wline_d0, R.id.wline_d1, R.id.wline_d2};
         for (int i = 0; i < 3; i++) {
             if (i >= n) { v.setViewVisibility(heads[i], View.GONE); continue; }
             Calendar day = dayAt(off + i);
             v.setViewVisibility(heads[i], View.VISIBLE);
+            size(v, heads[i], 14f * kh);
             v.setTextViewText(heads[i], names[day.get(Calendar.DAY_OF_WEEK) - 1] + " " + day.get(Calendar.DAY_OF_MONTH));
             v.setTextColor(heads[i], off + i == 0 ? color : 0xFFD4D4DA);
         }
@@ -368,14 +439,21 @@ public class Widgets {
         JSONObject d = data(c);
         int color = accent(d);
         RemoteViews v = new RemoteViews(c.getPackageName(), R.layout.widget_line);
-        lineHeader(v, color, off, n);
+        /* La fila de los días mide 24 dp: la letra crece hasta donde cabe */
+        float kh = Math.min(fs(d), 1.3f);
+        lineHeader(v, color, off, n, kh);
+        float kfoot = w < 300 ? Math.min(kh, 1.1f) : kh;
+        size(v, R.id.wline_view, 14f * kfoot);
+        size(v, R.id.wline_center, 14f * kfoot);
         v.setOnClickPendingIntent(R.id.wline_days, open(c, "agenda", 120));
         v.setInt(R.id.wline_prev, "setColorFilter", color);
         v.setInt(R.id.wline_next, "setColorFilter", color);
         v.setInt(R.id.wline_add, "setColorFilter", color);
         v.setTextColor(R.id.wline_center, color);
         v.setTextViewText(R.id.wline_view, n == 1 ? "1 día" : n + " días");
-        v.setViewVisibility(R.id.wline_view, max > 1 ? View.VISIBLE : View.GONE);
+        /* En widgets estrechos no caben los cinco controles de abajo y «Ahora» salía cortado: primero se quita el «+» y después el número de días */
+        v.setViewVisibility(R.id.wline_view, max > 1 && w >= 215 ? View.VISIBLE : View.GONE);
+        v.setViewVisibility(R.id.wline_add, w >= 260 ? View.VISIBLE : View.GONE);
         v.setOnClickPendingIntent(R.id.wline_prev, lineIntent(c, id, "prev", 0));
         v.setOnClickPendingIntent(R.id.wline_next, lineIntent(c, id, "next", 1));
         v.setOnClickPendingIntent(R.id.wline_view, lineIntent(c, id, "view", 2));
@@ -386,7 +464,7 @@ public class Widgets {
         svc.setData(Uri.parse("temvra://widget/line/" + id + "/" + w));
         setList(c, v, R.id.wline_list, svc);
         v.setPendingIntentTemplate(R.id.wline_list, actionTemplate(c, 3000 + id % 1000));
-        m.updateAppWidget(id, v);
+        publish(m, id, v);
         reloadList(m, id, R.id.wline_list);
 
         // Al colocarlo se centra en la hora actual; después solo con el botón, para respetar el scroll
@@ -403,7 +481,7 @@ public class Widgets {
     static void scrollToNow(Context c, int id, long delay) {
         Context app = c.getApplicationContext();
         AppWidgetManager m = AppWidgetManager.getInstance(app);
-        int rows = Math.max(1, (m.getAppWidgetOptions(id).getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 300) - 80) / 19);
+        int rows = Math.max(1, (int) ((opts(m, id).getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 300) - 80) / lineRow(fs(data(app)))));
         Calendar now = Calendar.getInstance();
         int target = Math.max(0, (now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)) / 15 - rows / 2);
         android.os.Handler h = new android.os.Handler(android.os.Looper.getMainLooper());
@@ -538,6 +616,7 @@ public class Widgets {
         int tc = color;
         try { if (vault != null && !vault.optString("tc").isEmpty()) tc = Color.parseColor(vault.optString("tc")); } catch (Exception ignored) {}
         v.setTextColor(R.id.wn_vault, tc);
+        size(v, R.id.wn_vault, 17f * Math.min(fs(d), 1.4f));
         v.setInt(R.id.wn_zoom, "setColorFilter", color);
         v.setInt(R.id.wn_add, "setColorFilter", color);
         v.setOnClickPendingIntent(R.id.wn_vault, pickIntent(c, id, "vaults", 5000));
@@ -551,7 +630,7 @@ public class Widgets {
         setList(c, v, R.id.wn_list, svc);
         v.setEmptyView(R.id.wn_list, R.id.wn_empty);
         v.setPendingIntentTemplate(R.id.wn_list, actionTemplate(c, 6000 + id % 1000));
-        m.updateAppWidget(id, v);
+        publish(m, id, v);
         reloadList(m, id, R.id.wn_list);
     }
 
@@ -566,6 +645,10 @@ public class Widgets {
         v.setTextViewText(R.id.wg_name, (r != null ? r.optString("name") : "Registros") + "  ▾");
         v.setTextColor(R.id.wg_name, color);
         v.setTextViewText(R.id.wg_tag, r != null && !r.optString("tag").isEmpty() ? "#" + r.optString("tag") : "");
+        float k = fs(d), kh = Math.min(k, 1.3f);
+        size(v, R.id.wg_name, 14f * kh);
+        size(v, R.id.wg_tag, 11f * kh);
+        size(v, R.id.wg_empty, 13f * k);
         v.setInt(R.id.wg_add, "setColorFilter", color);
         v.setOnClickPendingIntent(R.id.wg_name, pickIntent(c, id, "regs", 7000));
         v.setOnClickPendingIntent(R.id.wg_add, open(c, r != null ? "reg:" + r.optString("id") : "regs", 7500));
@@ -575,7 +658,7 @@ public class Widgets {
         setList(c, v, R.id.wg_list, svc);
         v.setEmptyView(R.id.wg_list, R.id.wg_empty);
         v.setPendingIntentTemplate(R.id.wg_list, actionTemplate(c, 8000 + id % 1000));
-        m.updateAppWidget(id, v);
+        publish(m, id, v);
         reloadList(m, id, R.id.wg_list);
     }
 
@@ -618,7 +701,9 @@ public class Widgets {
         if (shown < all.size()) {
             if (shown > 0) out.append('\n');
             int a = out.length();
-            out.append("+").append(String.valueOf(all.size() - shown)).append(" más");
+            // En celdas estrechas o con letra grande «+4 más» no cabe en una línea: se queda en «+4»
+            String more = "+" + (all.size() - shown) + " más";
+            out.append(paint.measureText(more) > lineW ? "+" + (all.size() - shown) : more);
             out.setSpan(new android.text.style.ForegroundColorSpan(inMonth ? 0xFFA0A0A8 : 0x44A0A0A8), a, out.length(), 0);
         }
         return out;
@@ -627,7 +712,7 @@ public class Widgets {
     static void updateMonth(Context c, AppWidgetManager m, int id) {
         JSONObject d = data(c), days = d.optJSONObject("days");
         int color = accent(d), start = d.optInt("weekStart", 1);
-        Bundle o = m.getAppWidgetOptions(id);
+        Bundle o = opts(m, id);
         int w = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 320), h = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 340);
         float scale = clamp(Math.min(w / 320f, h / 340f), .75f, 1.5f);
         Calendar first = Calendar.getInstance(), now = Calendar.getInstance();
@@ -646,24 +731,31 @@ public class Widgets {
         v.setOnClickPendingIntent(R.id.wm_add, open(c, "newevent", 9490));
         int[] heads = {R.id.wm_d0, R.id.wm_d1, R.id.wm_d2, R.id.wm_d3, R.id.wm_d4, R.id.wm_d5, R.id.wm_d6};
         String[] letters = {"D", "L", "M", "X", "J", "V", "S"};
-        for (int i = 0; i < 7; i++) v.setTextViewText(heads[i], letters[(start + i) % 7]);
+        float kf = fs(d), kh = Math.min(kf, 1.3f);
+        size(v, R.id.wm_title, 20f * kh);
+        for (int i = 0; i < 7; i++) { v.setTextViewText(heads[i], letters[(start + i) % 7]); size(v, heads[i], 12f * kh); }
         Calendar cur = (Calendar) first.clone();
         int back = (first.get(Calendar.DAY_OF_WEEK) - 1 - start + 7) % 7;
         cur.add(Calendar.DAY_OF_MONTH, -back);
         String todayK = todayKey(now);
         v.removeAllViews(R.id.wm_rows);
         // Solo las semanas del mes, y letra más pequeña hasta que quepan 6 líneas (5 en los meses de 6 filas).
-        // 70 = márgenes + cabecera + letras de la semana; 3 = márgenes de la celda; 1,08 = alto de línea en dp por sp
+        // 52 = márgenes + cabecera; después van las letras de la semana. Cada celda: 3 de márgenes, 2 de relleno, el número del día y 1 sobre el texto.
+        // Los altos se miden con la letra del sistema: con una proporción fija, en móviles con letras altas la última línea salía cortada
+        // Con la letra más grande de Ajustes se piden menos líneas y no se baja de su tamaño mínimo: se ve más grande y lo que no cabe queda en «+N más»
         int weeks = (int) Math.ceil((back + first.getActualMaximum(Calendar.DAY_OF_MONTH)) / 7f);
         android.util.DisplayMetrics dm = c.getResources().getDisplayMetrics();
-        float fs = dm.scaledDensity / dm.density, numSp = Math.max(9f, 10.5f * scale);
-        float room = (h - 70f) / weeks - 3f - 3f - numSp * fs * 1.17f;
-        float lineSp = Math.max(8f, 9.5f * scale);
-        while (lineSp > 8f && room / (lineSp * fs * 1.08f) < 6f) lineSp = Math.max(8f, lineSp - .5f);
-        int fit = Math.max(0, (int) (room / (lineSp * fs * 1.08f)));
-        android.graphics.Paint paint = new android.graphics.Paint();
+        float numSp = Math.max(9f, 10.5f * scale) * kf;
+        float room = (h - 52f - lineDp(c, 12f * kh, true) - 2f) / weeks - 6f - lineDp(c, numSp, false);
+        float minSp = 8f * kf, lineSp = Math.max(8f, 9.5f * scale) * kf;
+        int want = Math.max(2, Math.round(6f / kf));
+        while (lineSp > minSp && monthFit(c, room, lineSp) < want) lineSp = Math.max(minSp, lineSp - .5f);
+        int fit = monthFit(c, room, lineSp);
+        android.graphics.Paint paint = textPaint(c);
         paint.setTextSize(lineSp * dm.scaledDensity);
-        float lineW = (w / 7f - 5f) * dm.density * .97f;
+        // Ancho útil de una celda: el del widget sin sus márgenes (12), entre 7, menos los márgenes de la celda (3) y el relleno del texto (2), con 1 dp de margen.
+        // Si el texto recortado mide una pizca más que la celda, salta de línea y empuja fuera el «+N más»
+        float lineW = ((w - 12f) / 7f - 6f) * dm.density;
         for (int r = 0, pos = 0; r < weeks; r++) {
             RemoteViews row = new RemoteViews(c.getPackageName(), R.layout.widget_month_row);
             for (int i = 0; i < 7; i++, pos++) {
@@ -691,7 +783,7 @@ public class Widgets {
             }
             v.addView(R.id.wm_rows, row);
         }
-        m.updateAppWidget(id, v);
+        publish(m, id, v);
     }
 
     /* ---------- «Ahora»: hora con segundos, el rayo del día y los dos próximos eventos ---------- */
@@ -752,12 +844,15 @@ public class Widgets {
     static void updatePulse(Context c, AppWidgetManager m, int id) {
         JSONObject d = data(c), p = d.optJSONObject("pulse");
         RemoteViews v = new RemoteViews(c.getPackageName(), R.layout.widget_pulse);
-        Bundle o = m.getAppWidgetOptions(id);
+        Bundle o = opts(m, id);
         int w = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 280), h = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 180);
         int lz = colorOr(p != null ? p.optString("laser") : null, 0xFFFF3B43), lzl = lighten(lz, .3f);
-        float clock = clamp(Math.min(h * .32f, w * .2f), 34, 76);
-        v.setTextViewTextSize(R.id.wp_hm, TypedValue.COMPLEX_UNIT_SP, clock);
-        v.setTextViewTextSize(R.id.wp_s, TypedValue.COMPLEX_UNIT_SP, clock * .4f);
+        /* La hora ya ocupa lo que cabe a lo ancho: con letra grande crecen los eventos y sus cuentas atrás; la fecha, solo un poco */
+        float k = fs(d), kd = Math.min(k, 1.15f);
+        float clock = clamp(Math.min(h * .32f, w * .2f), 34, 76) * Math.min(k, 1f);
+        size(v, R.id.wp_date, 12f * kd); size(v, R.id.wp_left, 11f * kd); size(v, R.id.wp_lbl, 10f * k); size(v, R.id.wp_empty, 13f * k);
+        size(v, R.id.wp_t1, 15f * k); size(v, R.id.wp_w1, 12f * k); size(v, R.id.wp_in1, 9f * k); size(v, R.id.wp_c1, 17f * k); size(v, R.id.wp_x1, 15f * k);
+        size(v, R.id.wp_t2, 14f * k); size(v, R.id.wp_w2, 11.5f * k); size(v, R.id.wp_in2, 9f * k); size(v, R.id.wp_c2, 15f * k); size(v, R.id.wp_x2, 14f * k);
         v.setTextColor(R.id.wp_s, lzl);
         Calendar cal = Calendar.getInstance();
         long now = System.currentTimeMillis();
@@ -768,17 +863,53 @@ public class Widgets {
         v.setViewPadding(R.id.wp_lzw, 0, 0, px(c, (1 - frac) * inner), 0);
         v.setInt(R.id.wp_lz, "setColorFilter", lz);
         v.setInt(R.id.wp_halo, "setColorFilter", lz);
-        v.setTextViewText(R.id.wp_left, "Quedan " + dur((1440 - mins) * 60_000L));
+        String leftTxt = "Quedan " + dur((1440 - mins) * 60_000L);
+        v.setTextViewText(R.id.wp_left, leftTxt);
         List<JSONObject> up = new ArrayList<>();
         JSONArray n = p != null ? p.optJSONArray("next") : null;
         for (int i = 0; n != null && i < n.length(); i++) { JSONObject e = n.optJSONObject(i); if (e != null && e.optLong("at") > now) up.add(e); }
         java.util.Collections.sort(up, (a, b) -> Long.compare(a.optLong("at"), b.optLong("at")));
-        boolean small = h < 150, tiny = h < 105;
+        /* Qué cabe de verdad, medido con la letra del sistema. Antes se decidía solo por el alto del widget y, según el móvil y la letra, el evento salía cortado por abajo.
+           Por orden: dos eventos o uno, con el rótulo «PRÓXIMOS» o sin él; la hora puede encoger hasta un 20 % para hacerles sitio.
+           24 = márgenes de arriba y abajo (más 2 dp de margen: si falta sitio, la fila se encoge y corta su texto); 22 = el rayo del día; 16 y 14 = márgenes de cada evento */
+        float avail = h - 26f, unit = lineDp(c, 100f, false) / 100f;
+        float dateCol = lineDp(c, 12f * kd, true) + 2f + lineDp(c, 11f * kd, true) + 8f;
+        float lbl = 8f + lineDp(c, 10f * k, true), empty = 8f + lineDp(c, 13f * k, true);
+        float r1 = 16f + Math.max(30f, Math.max(lineDp(c, 15f * k, true) + lineDp(c, 12f * k, true), lineDp(c, 9f * k, true) + lineDp(c, 17f * k, true)));
+        float r2 = 14f + Math.max(26f, Math.max(lineDp(c, 14f * k, true) + lineDp(c, 11.5f * k, true), lineDp(c, 9f * k, true) + lineDp(c, 15f * k, true)));
+        boolean none = up.isEmpty(), label = false;
+        int rows = 0;
+        float minClock = Math.max(Math.min(34f, clock), clock * .8f);
+        pick:
+        for (int nr = none ? 1 : Math.min(2, up.size()); nr >= 1; nr--) for (int withLabel = none ? 0 : 1; withLabel >= 0; withLabel--) {
+            float need = none ? empty : (withLabel == 1 ? lbl : 0f) + r1 + (nr == 2 ? r2 : 0f);
+            float room = avail - need - 22f;
+            if (room < dateCol) continue;
+            float fit = Math.min(clock, room / unit);
+            if (fit < minClock) continue;
+            clock = fit; rows = nr; label = withLabel == 1;
+            break pick;
+        }
+        /* A lo ancho: la hora, los segundos y la columna de la fecha comparten fila. En widgets estrechos la fecha salía cortada por la derecha: encoge la hora */
+        android.util.DisplayMetrics dm = c.getResources().getDisplayMetrics();
+        android.graphics.Paint tp = textPaint(c);
+        tp.setTextSize(12f * kd * dm.scaledDensity);
+        tp.setLetterSpacing(.1f);
+        float dateW = tp.measureText(new java.text.SimpleDateFormat("EEE d MMM", Locale.getDefault()).format(new java.util.Date()).toUpperCase(Locale.getDefault()));
+        tp.setLetterSpacing(0f);
+        tp.setTextSize(11f * kd * dm.scaledDensity);
+        dateW = Math.max(dateW, tp.measureText(leftTxt)) / dm.density;
+        tp.setTextSize(100f * dm.scaledDensity);
+        float perSp = (tp.measureText("00:00") + tp.measureText("00") * .4f) / dm.density / 100f;
+        clock = Math.min(clock, Math.max(26f, (w - 36f - dateW - 10f) / perSp));
+        v.setTextViewTextSize(R.id.wp_hm, TypedValue.COMPLEX_UNIT_SP, clock);
+        v.setTextViewTextSize(R.id.wp_s, TypedValue.COMPLEX_UNIT_SP, clock * .4f);
+        boolean small = rows < 2, tiny = rows < 1;
         pulseRow(c, v, tiny || up.isEmpty() ? null : up.get(0), now, lz, R.id.wp_r1, R.id.wp_d1, R.id.wp_t1, R.id.wp_w1, R.id.wp_c1, R.id.wp_x1, 9601);
         pulseRow(c, v, small || up.size() < 2 ? null : up.get(1), now, lz, R.id.wp_r2, R.id.wp_d2, R.id.wp_t2, R.id.wp_w2, R.id.wp_c2, R.id.wp_x2, 9602);
-        v.setViewVisibility(R.id.wp_lbl, tiny || small || up.isEmpty() ? View.GONE : View.VISIBLE);
+        v.setViewVisibility(R.id.wp_lbl, label ? View.VISIBLE : View.GONE);
         v.setViewVisibility(R.id.wp_empty, !tiny && up.isEmpty() ? View.VISIBLE : View.GONE);
         v.setOnClickPendingIntent(R.id.wp_root, open(c, "agenda", 9600));
-        m.updateAppWidget(id, v);
+        publish(m, id, v);
     }
 }

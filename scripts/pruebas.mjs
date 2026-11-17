@@ -68,28 +68,59 @@ async function token(a){
   await a.recarga();
   ok(await a.ev(`VTAPI.state().gh.token==='de_prueba'`),'token: sin llavero en el sistema se conserva como antes')}
 
-/* Encabezado del día en una nota que ya existe: va tras las propiedades, con la agenda de ese día fija, y no se repite */
+/* Encabezado del día en una nota que ya existe: se pide desde el menú ⋮ de la nota abierta, va tras las propiedades, con la agenda de ese día fija, y no se repite */
 async function encabezado(a){
   await a.ev(`(async()=>{VTAPI.state().notes.unshift({id:'nqa1',title:'Prueba',folder:'',pinned:false,created:Date.now(),updated:Date.now(),body:'---\\ntags: qa\\n---\\nTexto de prueba para seleccionar con el ratón. Es una línea larga que ocupa buena parte del ancho de la nota.\\n\\nOtro párrafo con más texto.\\n'});${toque};await new Promise(r=>setTimeout(r,500))})()`);
   await a.recarga();
   await a.ev(`(async()=>{document.querySelector('.nav [data-view=notes]').click();await new Promise(r=>setTimeout(r,900));const b=document.querySelector('[data-note="nqa1"],[data-id="nqa1"],[data-nid="nqa1"]');b&&b.click();await new Promise(r=>setTimeout(r,900))})()`);
-  const hoy=`(async()=>{document.getElementById('nm-dayh').click();await new Promise(r=>setTimeout(r,600));const b=[...document.querySelectorAll('.sheet-back:not([hidden]) button')].find(x=>/^Hoy/.test(x.textContent.trim()));b&&b.click();await new Promise(r=>setTimeout(r,800))})()`;
-  await a.ev(hoy);
+  const hoy=`(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms));document.getElementById('ne-more').click();await w(600);const m=[...document.querySelectorAll('#ob-sheet button')].find(x=>x.textContent.includes('Encabezado del día'));if(!m)return false;m.click();await w(600);const b=[...document.querySelectorAll('.sheet-back:not([hidden]) button')].find(x=>/^Hoy/.test(x.textContent.trim()));b&&b.click();await w(800);return !!b})()`;
+  ok(await a.ev(hoy),'notas: «Encabezado del día» está en el menú ⋮ de la nota abierta');
   const r=await a.ev(`(()=>{const n=VTAPI.state().notes.find(x=>x.id==='nqa1'),p=v=>String(v).padStart(2,'0'),d=new Date(),k=d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()),b=document.querySelector('#ne-read .agenda-blk');return {tras:/^---\\ntags: qa\\n---\\n# \\S/.test(n.body),agenda:n.body.includes('\`\`\`agenda '+k),bloque:!!b&&b.dataset.k===k}})()`);
   ok(r.tras&&r.agenda&&r.bloque,'notas: encabezado del día tras las propiedades, con la agenda de ese día',r);
   await a.ev(hoy);
   ok(await a.ev(`(VTAPI.state().notes.find(x=>x.id==='nqa1').body.match(/^# /gm)||[]).length===1`),'notas: el encabezado del mismo día no se repite')}
 
-/* Con ratón, ni burbuja ni gel al pulsar o seleccionar texto; fuera del texto sí (sigue en la nota abierta por encabezado()) */
-async function sobreTexto(a){
-  const p=await a.ev(`(()=>{const ps=[...document.querySelectorAll('#ne-read p')],q=ps.find(x=>/Texto de prueba/.test(x.textContent)),q2=ps.find(x=>/Otro párrafo/.test(x.textContent)).getBoundingClientRect(),r=document.createRange();r.selectNodeContents(q.firstChild);const b=r.getClientRects()[0],c=document.getElementById('ne-read').getBoundingClientRect();return {tx:b.left+40,ty:b.top+b.height/2,vx:c.right-30,vy:q2.bottom+60}})()`);
-  const huecos=()=>a.ev(`document.querySelectorAll('.lg-hole').length`);
+/* Dentro de la nota abierta no sale la burbuja: ni sobre el texto, ni al seleccionarlo, ni en los huecos. En la lista de carpetas y en la barra de formato sí (sigue en la nota abierta por encabezado()) */
+async function burbujaNota(a){
+  const p=await a.ev(`(()=>{const ps=[...document.querySelectorAll('#ne-read p')],q=ps.find(x=>/Texto de prueba/.test(x.textContent)),q2=ps.find(x=>/Otro párrafo/.test(x.textContent)).getBoundingClientRect(),r=document.createRange();r.selectNodeContents(q.firstChild);const b=r.getClientRects()[0],c=document.getElementById('ne-read').getBoundingClientRect(),f=document.querySelector('[data-note="nqa1"]').getBoundingClientRect();return {tx:b.left+40,ty:b.top+b.height/2,vx:c.right-30,vy:q2.bottom+60,fx:f.left+f.width/2,fy:f.top+f.height/2}})()`);
+  const huecos=()=>a.ev(`document.querySelectorAll('.lg-hole').length`),pulsa=async(x,y)=>{await a.raton('mouseMoved',x,y);await a.raton('mousePressed',x,y,1,'left');await sleep(350);const n=await huecos();await a.raton('mouseReleased',x,y,0,'left');await sleep(800);return n};
   await a.raton('mouseMoved',p.tx,p.ty);await a.raton('mousePressed',p.tx,p.ty,1,'left');await sleep(350);const enTexto=await huecos();
   for(let i=1;i<=6;i++){await a.raton('mouseMoved',p.tx+i*25,p.ty,1,'left');await sleep(30)}await sleep(250);const arrastrando=await huecos(),sel=await a.ev(`getSelection().toString().length`);
   await a.raton('mouseReleased',p.tx+150,p.ty,0,'left');await sleep(600);await a.ev(`getSelection().removeAllRanges()`);
-  await a.raton('mouseMoved',p.vx,p.vy);await a.raton('mousePressed',p.vx,p.vy,1,'left');await sleep(350);const fuera=await huecos();
-  await a.raton('mouseReleased',p.vx,p.vy,0,'left');await sleep(800);
-  ok(!enTexto&&!arrastrando&&sel>0&&fuera===1,'PC: sin burbuja al pulsar o seleccionar texto con el ratón, sí fuera del texto',{enTexto,arrastrando,sel,fuera})}
+  const hueco=await pulsa(p.vx,p.vy),lista=await pulsa(p.fx,p.fy);
+  const t=await a.ev(`(async()=>{if(document.getElementById('ne-edit').hidden){document.getElementById('ne-mode').click();await new Promise(r=>setTimeout(r,500))}const b=document.querySelector('#ne-tools [data-tool=undo]').getBoundingClientRect();return [b.left+b.width/2,b.top+b.height/2]})()`);
+  const barra=await pulsa(t[0],t[1]);
+  ok(!enTexto&&!arrastrando&&sel>0&&!hueco,'notas: sin burbuja dentro de la nota abierta, ni al pulsar ni al seleccionar texto',{enTexto,arrastrando,sel,hueco});
+  ok(lista===1&&barra===1,'notas: la burbuja sigue en la lista de carpetas y en la barra de formato',{lista,barra})}
+
+/* «Fecha de hoy» de la barra de formato y la fecha automática de una nota (sigue en la nota abierta) */
+async function fechaHoy(a){
+  const r=await a.ev(`(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms)),n=VTAPI.state().notes.find(x=>x.id==='nqa1'),ta=document.getElementById('ne-text'),edita=async e=>{if(document.getElementById('ne-edit').hidden===e){document.getElementById('ne-mode').click();await w(450)}},fecha=()=>{document.querySelector('#ne-tools [data-tool=date]').click();return w(500)};
+    await edita(false);n.body='Uno\\nDos\\n';delete n.dayAuto;delete n.daySkip;await edita(true);
+    const orden=[...document.querySelectorAll('#ne-tools [data-tool]')].slice(0,4).map(b=>b.dataset.tool).join(',');
+    ta.focus();ta.setSelectionRange(ta.value.length,ta.value.length);await fecha();const enc=/^Uno\\nDos\\n## \\S[^\\n]*\\d{4}\\n$/.test(ta.value);
+    ta.setSelectionRange(1,1);await fecha();const dentro=/^U[^#\\n]+\\d{4}no\\n/.test(ta.value);
+    await edita(false);n.body='Uno\\nDos\\n';
+    document.getElementById('ne-more').click();await w(600);const m=[...document.querySelectorAll('#ob-sheet button')].find(x=>x.textContent.includes('Fecha automática cada día'));if(!m)return {menu:false};m.click();await w(600);
+    await edita(true);const enEditor=/^Uno\\nDos\\n\\n## \\S[^\\n]*\\n$/.test(ta.value),sinGuardar=n.body==='Uno\\nDos\\n';
+    ta.focus();ta.setSelectionRange(0,0);document.execCommand('insertText',false,'X');await w(700);const corregir=n.body==='XUno\\nDos\\n';
+    ta.setSelectionRange(ta.value.length,ta.value.length);document.execCommand('insertText',false,'hoy');await w(700);const escrito=/^XUno\\nDos\\n\\n## \\S[^\\n]*\\nhoy$/.test(n.body);
+    await edita(false);await edita(true);const unaVez=(ta.value.match(/^## /gm)||[]).length===1;
+    await edita(false);delete n.dayAuto;return {menu:true,orden,enc,dentro,enEditor,sinGuardar,corregir,escrito,unaVez}})()`);
+  ok(r.orden==='undo,redo,head,date'&&r.enc&&r.dentro,'notas: «Fecha de hoy» está al principio de la barra; en una línea vacía es un encabezado y dentro de un texto va tal cual',r);
+  ok(r.menu&&r.enEditor&&r.sinGuardar&&r.corregir,'notas: la fecha automática aparece al editar y no se guarda mientras no se escriba debajo',r);
+  ok(r.escrito&&r.unaVez,'notas: al escribir debajo se guarda con su fecha, una sola vez por día',r)}
+
+/* El tamaño de letra de los widgets viaja en sus datos; el ajuste solo sale en Android */
+async function letraWidgets(a){
+  const r=await a.ev(`(async()=>{const s=document.getElementById('wfs-sel'),antes=VTAPI.widgetData().fs;s.value='1.3';s.dispatchEvent(new Event('change'));await new Promise(r=>setTimeout(r,300));const con=VTAPI.widgetData().fs;s.value='1';s.dispatchEvent(new Event('change'));return {antes,con,oculto:document.getElementById('wfs-row').hidden}})()`);
+  ok(r.antes===1&&r.con===1.3&&r.oculto,'widgets: el tamaño de letra elegido llega a sus datos y el ajuste solo sale en Android',r)}
+
+/* En el móvil los emojis de una categoría caben todos en la hoja (con 10 columnas fijas los últimos se salían). Sigue al bloque creado por bloque() */
+async function emojis(a){
+  const r=await a.ev(`(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms)),b=document.querySelector('#v-blocks .bk-b');if(!b)return null;b.click();await w(800);const nv=document.querySelector('#bks-cats [data-bks="_new"]');if(!nv)return null;nv.click();await w(800);const g=document.querySelector('.cat-em');if(!g)return null;
+    const R=g.getBoundingClientRect(),cs=[...g.querySelectorAll('button')].map(x=>x.getBoundingClientRect()),o={total:cs.length,fuera:cs.filter(c=>c.right>Math.min(R.right,innerWidth)+.5||c.left<R.left-.5).length,min:Math.round(Math.min(...cs.map(c=>c.width)))};document.getElementById('ob-sheet').hidden=true;document.getElementById('bk-sheet').hidden=true;return o})()`);
+  ok(r&&r.total===20&&!r.fuera&&r.min>=40,'móvil: los emojis de la categoría caben en la hoja',r)}
 
 /* Un aviso que sale tarde (PC dormido, app cerrada) dice cuánto hace que empezó, no lo que faltaba */
 async function avisoTarde(a){
@@ -124,12 +155,12 @@ try{
   const pc=await abre(9701,[1440,900]);
   const r=await vacio(pc,true);ok(r.vistas===7&&r.panel,'PC: todas las vistas de la Agenda y panel de días junto al Mes',r);
   await sinVisita(pc);await centrar(pc);await aro(pc,true);await guardado(pc);await token(pc);
-  await encabezado(pc);await sobreTexto(pc);await avisoTarde(pc);
+  await encabezado(pc);await burbujaNota(pc);await fechaHoy(pc);await letraWidgets(pc);await avisoTarde(pc);
   ok(!pc.errores.length,'PC: sin errores de JavaScript',pc.errores);pc.cierra();
   console.log('— Móvil 412×915');
   const mv=await abre(9702,[412,915],true);
   await vacio(mv,false);ok(!await mv.ev(`document.body.classList.contains('deskcal')`),'móvil: sin panel de días');
-  await sinVisita(mv);await centrar(mv);await aro(mv,false);await bloque(mv);await migracion(mv);
+  await sinVisita(mv);await centrar(mv);await aro(mv,false);await bloque(mv);await emojis(mv);await migracion(mv);
   ok(!mv.errores.length,'móvil: sin errores de JavaScript',mv.errores);mv.cierra();
 }catch(e){fallos++;console.error('✗ Prueba interrumpida:',e.message)}
 finally{abiertas.forEach(a=>a.cierra());await sleep(400);if(!yaHabia)try{fs.unlinkSync(enlace)}catch(e){}for(const d of temporales)try{fs.rmSync(d,{recursive:true,force:true})}catch(e){}}

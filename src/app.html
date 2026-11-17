@@ -1285,8 +1285,9 @@ body.desk .cal-vseg button[aria-pressed="true"]{font-weight:650}
 .bks-len{font-size:13px;color:var(--muted);white-space:nowrap}
 .bks-quick{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .bks-quick button{height:34px;padding:0 12px;border-radius:10px;background:var(--surface-3);color:var(--fg);font-size:13px}
-.cat-em{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
-.cat-em button{aspect-ratio:1;border-radius:10px;font-size:20px}
+/* Tantas columnas como quepan con un botón cómodo para el dedo: con 10 fijas las últimas se salían de la hoja en el móvil */
+.cat-em{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:4px}
+.cat-em button{aspect-ratio:1;min-width:0;padding:0;border-radius:10px;font-size:22px;line-height:1;display:grid;place-items:center}
 .cat-em button[aria-pressed="true"]{background:var(--container)}
 /* Lienzo */
 .cvview{background:var(--bg)}
@@ -3238,6 +3239,8 @@ body:not(.desk) #v-blocks.bkwk .bk-time,body:not(.desk) #v-blocks.bkwk .bk-em{di
         <span class="w1" id="pv-c-next2"></span>
       </div>
     </div>
+    <div class="card" id="wfs-row" hidden style="margin-top:8px"><div class="field" style="margin-top:0"><label for="wfs-sel">Tamaño de letra de los widgets</label><select id="wfs-sel"><option value="0.8">Muy pequeña</option><option value="0.9">Pequeña</option><option value="1">Normal</option><option value="1.15">Grande</option><option value="1.3">Muy grande</option><option value="1.5">Enorme</option></select></div>
+      <p class="sub">Cambia el texto de todos los widgets de la pantalla de inicio. La hora y las cifras del temporizador ya se ajustan solas al tamaño del widget.</p></div>
     <p class="sub" style="margin:8px 6px 0">Los widgets se actualizan solos cada minuto, sin abrir la app. Para ponerlos: mantén pulsado un hueco de la pantalla de inicio → Widgets → Temvra.</p>
 
     <div class="label" id="upd-label" hidden>Actualizaciones</div>
@@ -3788,6 +3791,7 @@ DICT.push(["¿Quitar también el fondo?","Remove the background too?","Remover t
 DICT.push(["Semana anterior","Previous week","Semana anterior","Semaine précédente","Vorherige Woche","Settimana precedente","Setmana anterior","前の週","上一周","이전 주"],["Semana siguiente","Next week","Próxima semana","Semaine suivante","Nächste Woche","Settimana successiva","Setmana següent","次の週","下一周","다음 주"],["Días anteriores","Previous days","Dias anteriores","Jours précédents","Vorherige Tage","Giorni precedenti","Dies anteriors","前の日々","前几天","이전 날들"],["Días siguientes","Next days","Próximos dias","Jours suivants","Nächste Tage","Giorni successivi","Dies següents","次の日々","后几天","다음 날들"]);
 /* Bóveda en una carpeta real */
 DICT.push(["Carpeta del teléfono", "Phone folder", "Pasta do telemóvel", "Dossier du téléphone", "Ordner auf dem Telefon", "Cartella del telefono", "Carpeta del telèfon", "スマホのフォルダ", "手机文件夹", "휴대폰 폴더"],["Carpeta del equipo", "Computer folder", "Pasta do computador", "Dossier de l'ordinateur", "Ordner auf dem Computer", "Cartella del computer", "Carpeta de l'ordinador", "パソコンのフォルダ", "电脑文件夹", "컴퓨터 폴더"],["En este equipo", "On this computer", "Neste computador", "Sur cet ordinateur", "Auf diesem Computer", "Su questo computer", "En aquest ordinador", "このパソコン", "在这台电脑上", "이 컴퓨터에"],["Equipo + GitHub", "Computer + GitHub", "Computador + GitHub", "Ordinateur + GitHub", "Computer + GitHub", "Computer + GitHub", "Ordinador + GitHub", "パソコン + GitHub", "电脑 + GitHub", "컴퓨터 + GitHub"],["Elegir carpeta…", "Choose folder…", "Escolher pasta…", "Choisir un dossier…", "Ordner wählen…", "Scegli cartella…", "Tria una carpeta…", "フォルダを選択…", "选择文件夹…", "폴더 선택…"],["Cambiar de carpeta", "Change folder", "Mudar de pasta", "Changer de dossier", "Ordner wechseln", "Cambia cartella", "Canvia de carpeta", "フォルダを変更", "更换文件夹", "폴더 변경"],["Sincronizar ahora", "Sync now", "Sincronizar agora", "Synchroniser maintenant", "Jetzt synchronisieren", "Sincronizza ora", "Sincronitza ara", "今すぐ同期", "立即同步", "지금 동기화"],["Dejar de usar la carpeta", "Stop using the folder", "Deixar de usar a pasta", "Ne plus utiliser le dossier", "Ordner nicht mehr verwenden", "Smetti di usare la cartella", "Deixa d'usar la carpeta", "フォルダの使用をやめる", "停止使用该文件夹", "폴더 사용 중지"],["Elige una carpeta", "Choose a folder", "Escolhe uma pasta", "Choisis un dossier", "Wähle einen Ordner", "Scegli una cartella", "Tria una carpeta", "フォルダを選んでください", "请选择文件夹", "폴더를 선택하세요"],["Guardar en una carpeta del teléfono", "Save to a phone folder", "Guardar numa pasta do telemóvel", "Enregistrer dans un dossier du téléphone", "In einem Ordner auf dem Telefon speichern", "Salva in una cartella del telefono", "Desa en una carpeta del telèfon", "スマホのフォルダに保存", "保存到手机文件夹", "휴대폰 폴더에 저장"],["Guardar en una carpeta del equipo", "Save to a computer folder", "Guardar numa pasta do computador", "Enregistrer dans un dossier de l'ordinateur", "In einem Ordner auf dem Computer speichern", "Salva in una cartella del computer", "Desa en una carpeta de l'ordinador", "パソコンのフォルダに保存", "保存到电脑文件夹", "컴퓨터 폴더에 저장"],["Guardar las notas como archivos .md que otras apps pueden abrir", "Save notes as .md files other apps can open", "Guardar as notas como ficheiros .md que outras apps podem abrir", "Enregistrer les notes en fichiers .md lisibles par d'autres apps", "Notizen als .md-Dateien speichern, die andere Apps öffnen können", "Salva le note come file .md apribili da altre app", "Desa les notes com a fitxers .md que altres apps poden obrir", "ほかのアプリで開ける .md ファイルとしてノートを保存", "将笔记保存为其他应用可打开的 .md 文件", "다른 앱에서 열 수 있는 .md 파일로 노트 저장"],["Los archivos se quedan en la carpeta y las notas en Temvra", "Files stay in the folder and notes stay in Temvra", "Os ficheiros ficam na pasta e as notas no Temvra", "Les fichiers restent dans le dossier et les notes dans Temvra", "Die Dateien bleiben im Ordner, die Notizen in Temvra", "I file restano nella cartella e le note in Temvra", "Els fitxers es queden a la carpeta i les notes a Temvra", "ファイルはフォルダに、ノートは Temvra に残ります", "文件保留在文件夹中，笔记保留在 Temvra 中", "파일은 폴더에, 노트는 Temvra에 남습니다"],["Carpeta (opcional)…", "Folder (optional)…", "Pasta (opcional)…", "Dossier (facultatif)…", "Ordner (optional)…", "Cartella (facoltativa)…", "Carpeta (opcional)…", "フォルダ（任意）…", "文件夹（可选）…", "폴더 (선택)…"],["Solo en la app de Android o del PC", "Only in the Android or PC app", "Só na app Android ou do PC", "Uniquement dans l'app Android ou PC", "Nur in der Android- oder PC-App", "Solo nell'app Android o PC", "Només a l'app d'Android o de PC", "Android または PC のアプリのみ", "仅限 Android 或电脑版应用", "Android 또는 PC 앱에서만"]);
+DICT.push(["Tamaño de letra de los widgets","Widget text size","Tamanho do texto dos widgets","Taille du texte des widgets","Textgröße der Widgets","Dimensione del testo dei widget","Mida de la lletra dels widgets","ウィジェットの文字サイズ","小组件文字大小","위젯 글자 크기"],["Muy pequeña","Very small","Muito pequena","Très petite","Sehr klein","Molto piccola","Molt petita","とても小さい","很小","매우 작게"],["Pequeña","Small","Pequena","Petite","Klein","Piccola","Petita","小さい","小","작게"],["Normal","Normal","Normal","Normale","Normal","Normale","Normal","標準","标准","보통"],["Grande","Large","Grande","Grande","Groß","Grande","Gran","大きい","大","크게"],["Muy grande","Very large","Muito grande","Très grande","Sehr groß","Molto grande","Molt gran","とても大きい","很大","매우 크게"],["Enorme","Huge","Enorme","Énorme","Riesig","Enorme","Enorme","特大","特大","아주 크게"],["Cambia el texto de todos los widgets de la pantalla de inicio. La hora y las cifras del temporizador ya se ajustan solas al tamaño del widget.","Changes the text of every home screen widget. The clock and the timer digits already adapt to the widget's size.","Altera o texto de todos os widgets do ecrã inicial. A hora e os dígitos do temporizador já se ajustam ao tamanho do widget.","Modifie le texte de tous les widgets de l'écran d'accueil. L'heure et les chiffres du minuteur s'adaptent déjà à la taille du widget.","Ändert den Text aller Widgets auf dem Startbildschirm. Die Uhrzeit und die Ziffern des Timers passen sich bereits der Widget-Größe an.","Cambia il testo di tutti i widget della schermata Home. L'ora e le cifre del timer si adattano già alle dimensioni del widget.","Canvia el text de tots els widgets de la pantalla d'inici. L'hora i les xifres del temporitzador ja s'ajusten soles a la mida del widget.","ホーム画面のすべてのウィジェットの文字を変更します。時刻とタイマーの数字はウィジェットの大きさに合わせて自動で調整されます。","更改主屏幕上所有小组件的文字。时间和计时器数字已会随小组件大小自动调整。","홈 화면의 모든 위젯 글자를 바꿉니다. 시각과 타이머 숫자는 위젯 크기에 맞춰 이미 자동으로 조정됩니다."],["Encabezado del día","Day header","Cabeçalho do dia","En-tête du jour","Tageskopf","Intestazione del giorno","Capçalera del dia","その日の見出し","当天标题","하루 머리글"],["Arriba, con la fecha y la agenda de ese día","At the top, with that day's date and agenda","No topo, com a data e a agenda desse dia","En haut, avec la date et l'agenda de ce jour","Oben, mit Datum und Agenda dieses Tages","In alto, con la data e l'agenda di quel giorno","A dalt, amb la data i l'agenda d'aquell dia","上部に、その日の日付と予定を表示","在顶部，带当天的日期和日程","맨 위에 그날의 날짜와 일정 표시"],["Fecha automática cada día","Automatic date every day","Data automática todos os dias","Date automatique chaque jour","Automatisches Datum jeden Tag","Data automatica ogni giorno","Data automàtica cada dia","毎日の日付を自動で追加","每天自动添加日期","매일 날짜 자동 추가"],["Añade la fecha de hoy al final cuando escribes en un día nuevo","Adds today's date at the end when you write on a new day","Acrescenta a data de hoje no fim quando escreves num dia novo","Ajoute la date du jour à la fin quand vous écrivez un nouveau jour","Fügt das heutige Datum am Ende hinzu, wenn du an einem neuen Tag schreibst","Aggiunge la data di oggi alla fine quando scrivi in un giorno nuovo","Afegeix la data d'avui al final quan escrius en un dia nou","新しい日に書くと、末尾に今日の日付を追加します","在新的一天书写时，在末尾添加今天的日期","새로운 날에 쓰면 끝에 오늘 날짜를 추가합니다"],["Activada: toca para quitarla","On: tap to turn it off","Ativada: toca para a desativar","Activée : touchez pour la désactiver","Aktiv: zum Ausschalten tippen","Attiva: tocca per disattivarla","Activada: toca per treure-la","オン：タップでオフ","已开启：点按关闭","켜짐: 탭하여 끄기"],["Fecha automática activada: al editar esta nota en un día nuevo se añade la fecha al final","Automatic date on: when you edit this note on a new day, the date is added at the end","Data automática ativada: ao editar esta nota num dia novo, a data é acrescentada no fim","Date automatique activée : en modifiant cette note un nouveau jour, la date est ajoutée à la fin","Automatisches Datum aktiv: Wenn du diese Notiz an einem neuen Tag bearbeitest, wird das Datum am Ende hinzugefügt","Data automatica attiva: modificando questa nota in un giorno nuovo, la data viene aggiunta alla fine","Data automàtica activada: en editar aquesta nota en un dia nou s'afegeix la data al final","自動日付オン：新しい日にこのノートを編集すると、末尾に日付が追加されます","自动日期已开启：在新的一天编辑此笔记时，会在末尾添加日期","자동 날짜 켜짐: 새로운 날에 이 노트를 편집하면 끝에 날짜가 추가됩니다"],["Fecha automática desactivada","Automatic date off","Data automática desativada","Date automatique désactivée","Automatisches Datum aus","Data automatica disattivata","Data automàtica desactivada","自動日付オフ","自动日期已关闭","자동 날짜 꺼짐"],["Insertar la fecha de hoy como encabezado","Insert today's date as a heading","Inserir a data de hoje como cabeçalho","Insérer la date du jour comme titre","Heutiges Datum als Überschrift einfügen","Inserisci la data di oggi come intestazione","Insereix la data d'avui com a capçalera","今日の日付を見出しとして挿入","将今天的日期作为标题插入","오늘 날짜를 제목으로 삽입"],["Fecha automática cada día: activar","Automatic date every day: turn on","Data automática todos os dias: ativar","Date automatique chaque jour : activer","Automatisches Datum jeden Tag: einschalten","Data automatica ogni giorno: attiva","Data automàtica cada dia: activa","毎日の日付を自動で追加：オン","每天自动添加日期：开启","매일 날짜 자동 추가: 켜기"],["Fecha automática cada día: desactivar","Automatic date every day: turn off","Data automática todos os dias: desativar","Date automatique chaque jour : désactiver","Automatisches Datum jeden Tag: ausschalten","Data automatica ogni giorno: disattiva","Data automàtica cada dia: desactiva","毎日の日付を自動で追加：オフ","每天自动添加日期：关闭","매일 날짜 자동 추가: 끄기"],["Insertar encabezado del día","Insert day header","Inserir cabeçalho do dia","Insérer l'en-tête du jour","Tageskopf einfügen","Inserisci intestazione del giorno","Insereix la capçalera del dia","その日の見出しを挿入","插入当天标题","하루 머리글 삽입"],["Encabezado del día añadido","Day header added","Cabeçalho do dia adicionado","En-tête du jour ajouté","Tageskopf hinzugefügt","Intestazione del giorno aggiunta","Capçalera del dia afegida","その日の見出しを追加しました","已添加当天标题","하루 머리글을 추가했습니다"],["La nota ya tiene el encabezado de ese día","The note already has that day's header","A nota já tem o cabeçalho desse dia","La note a déjà l'en-tête de ce jour","Die Notiz hat den Kopf dieses Tages bereits","La nota ha già l'intestazione di quel giorno","La nota ja té la capçalera d'aquell dia","このノートにはその日の見出しがすでにあります","该笔记已有当天的标题","이 노트에는 이미 그날의 머리글이 있습니다"],["Actualizar avisos cada","Refresh reminders every","Atualizar avisos a cada","Actualiser les rappels toutes les","Hinweise aktualisieren alle","Aggiorna gli avvisi ogni","Actualitza els avisos cada","通知の更新間隔","提醒刷新间隔","알림 새로 고침 간격"],["Solo al empezar","Only at the start","Só ao começar","Seulement au début","Nur zu Beginn","Solo all'inizio","Només en començar","開始時のみ","仅在开始时","시작할 때만"]);
 const LCOLS=['es','en','pt','fr','de','it','ca','ja','zh','ko'];const TR={};LCOLS.slice(1).forEach(l=>TR[l]=new Map());DICT.forEach(r=>LCOLS.forEach((l,i)=>{if(i)TR[l].set(r[0],r[i])}));
 const PAT=[
   [/^Activar alarma (.+)$/,{en:'Turn on alarm $1',pt:'Ativar alarme $1',fr:'Activer l\'alarme $1',de:'Wecker $1 einschalten',it:'Attiva sveglia $1',ca:'Activa l\'alarma $1',ja:'アラーム $1 をオン',zh:'开启闹钟 $1',ko:'$1 알람 켜기'}],
@@ -4115,6 +4119,8 @@ function tSkip(){if(!running){tStart()}lap++;endAt=Date.now()+S.period*1000;toas
 function tNotif(){runSave();if(!window.VTNative||!VTNative.hasPlugin||VTNative.bg)return;const show=S.notif!=='never'&&(running||remain<S.period*1000||tHeld);
   VTNative.timerNotify({show,title:S.hide?'Temporizador':(S.name||'Temporizador'),body:T('Vuelta '+lap)+(running?'':' · '+T('En pausa')+' '+fmt(remain)),running,endAt,period:S.period*1000,remain});
   pushWidgets()}
+/* Tamaño de letra de los widgets de Android (Ajustes): 1 es el normal */
+function wFs(){const v=+S.wFs;return v>=.7&&v<=1.8?v:1}
 function pushWidgets(){if(window.VTNative&&VTNative.widgets&&!VTNative.bg&&window.VTAPI)VTNative.widgets(VTAPI.widgetData());pushPulse()}
 /* Widget «Ahora»: la hora, el rayo del día y los próximos eventos con la cuenta atrás. Lo pintan el widget de Android, el de escritorio y la vista previa de Ajustes */
 function pulseData(){const d=new Date(),now=+d,t0=dk(d),k1=new Date(d);k1.setDate(d.getDate()+30);let all=[];try{all=expandEvents(agEvents().concat(subEvents()),t0,dk(k1))}catch(e){}
@@ -8039,7 +8045,19 @@ function openDaily(k){const D=S.ob.daily,d=fromKey(k),title=fmtDate(d,D.fmt||'YY
 
 
 /* --- Nota abierta --- */
-let curNote=null,neEdit=false,neSaveT,navH=[],navI=-1,openTabs=[];
+let curNote=null,neEdit=false,neSaveT,navH=[],navI=-1,openTabs=[],dayPend=null;
+/* Fecha de un día como se escribe en las notas, y su línea de encabezado */
+function dayLong(d){return d.toLocaleDateString(LOC,{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
+function dayHeadLine(d){return '## '+cap(dayLong(d))}
+/* ¿Hay ya una línea con esa fecha? Vale con o sin almohadillas y sin mirar mayúsculas: sirve también para las fechas puestas a mano */
+function dayHas(txt,d){const w=norm(dayLong(d));return txt.split('\n').some(l=>norm(l.replace(/^#{1,6}\s+/,'').trim())===w)}
+/* Fecha automática (por nota, n.dayAuto): al editar en un día nuevo se añade al final el encabezado de hoy. Vive solo en el editor hasta que se escribe debajo:
+   saveNote lo deja fuera mientras siga vacío, así abrir la nota o corregir otra parte no la cambia ni la sube. Si se borra a mano, ese día no vuelve (n.daySkip) */
+function dayAutoIns(){dayPend=null;const n=curNote;if(!n||!n.dayAuto||!neEdit)return false;const d=new Date(),k=dk(d),ta=$('ne-text'),v=ta.value;if(n.daySkip===k||dayHas(v,d))return false;
+  const head=dayHeadLine(d),base=v.replace(/\s+$/,'');ta.value=base+(base?'\n\n':'')+head+'\n';dayPend={n,head,k,tail:v.slice(base.length)};ta.setSelectionRange(ta.value.length,ta.value.length);return true}
+function dayAutoSet(n,on){if(!n)return;if(on)n.dayAuto=true;else delete n.dayAuto;delete n.daySkip;
+  if(curNote===n&&neEdit){if(on)dayAutoIns();else if(dayPend){saveNote();$('ne-text').value=n.body;dayPend=null}autoGrow();edHL();if(on&&neUp())requestAnimationFrame(neToBottom)}
+  save();toast(on?'Fecha automática activada: al editar esta nota en un día nuevo se añade la fecha al final':'Fecha automática desactivada')}
 const I_EDIT=OBI('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',26);
 const I_READ=OBI('<path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2zM22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>',26);
 function leaveNote(){clearTimeout(neSaveT);if(!curNote)return;if(neEdit)saveNote();selLay=null;
@@ -8052,9 +8070,9 @@ function openNote(id,edit,fromNav){
   neBody().scrollTop=0;if(neUp())requestAnimationFrame(()=>{neToBottom();setTimeout(neToBottom,60)});if(edit&&!curNote.title)setTimeout(()=>$('ne-title').focus(),60);
   setTimeout(()=>{renderDeskTabs();applyDesk();neDownBtn()},300);$('nb-tabn').textContent=openTabs.length;$('nb-back').disabled=navI<=0;$('nb-fwd').disabled=navI>=navH.length-1;
 }
-function setMode(e){neEdit=e;$('ne-edit').hidden=!e;$('ne-read').hidden=e;$('ne-tools').hidden=!e;$('ob-bottom').hidden=e||!S.ob.bottomBar;
+function setMode(e){neEdit=e;dayPend=null;$('ne-edit').hidden=!e;$('ne-read').hidden=e;$('ne-tools').hidden=!e;$('ob-bottom').hidden=e||!S.ob.bottomBar;
   $('ne-mode').innerHTML=e?I_READ:I_EDIT;$('ne-mode').setAttribute('aria-label',e?'Lectura':'Edición');$('ne-mode').title=e?'Lectura':'Edición';
-  if(e){$('ne-text').value=curNote.body;autoGrow();edHL();if(neUp())requestAnimationFrame(neToBottom)}else{renderRead();if(neUp())requestAnimationFrame(neToBottom)}setTimeout(renderDeskTabs,0);renderNoteMeta();$('ne-sug').hidden=true;requestAnimationFrame(()=>{if(typeof neDownBtn==='function')neDownBtn()})}
+  if(e){$('ne-text').value=curNote.body;dayAutoIns();autoGrow();edHL();if(neUp())requestAnimationFrame(neToBottom)}else{renderRead();if(neUp())requestAnimationFrame(neToBottom)}setTimeout(renderDeskTabs,0);renderNoteMeta();$('ne-sug').hidden=true;requestAnimationFrame(()=>{if(typeof neDownBtn==='function')neDownBtn()})}
 function propsHTML(p){const ks=Object.keys(p);if(!ks.length)return '';return `<div class="props"><div class="props-h">Propiedades</div>${ks.map(k=>{const v=p[k],t=propType(k,v);const val=Array.isArray(v)?v.map(x=>`<span class="pchip">${esc(x)}</span>`).join(''):(t==='checkbox'?`<input type="checkbox" disabled ${v==='true'?'checked':''}>`:esc(v));return `<div class="prow"><span class="pk">${PTYPE_IC[t]}${esc(k)}</span><span class="pv">${val}</span></div>`}).join('')}</div>`}
 function renderRead(){setTimeout(()=>{hydrateMedia($('ne-read'));if(curNote)$('ne-read').querySelectorAll('.agenda-blk').forEach(b=>b.innerHTML=agendaHTML(b.dataset.k||curNote.date||dk(new Date())))},0);const fm=fmParse(curNote.body);$('ne-read').innerHTML=propsHTML(fm.props)+(fm.rest.trim()?md(fm.rest.replace(/^#\s+.*\n?/,m=>norm(m.replace(/^#\s+/,'').trim())===norm(curNote.title)?'':m)):(Object.keys(fm.props).length?'':'<p style="color:var(--ob-muted)">—</p>'))}
 function renderNoteMeta(){
@@ -8078,7 +8096,10 @@ function neDownBtn(){const b=neBody(),btn=$('ne-down');if(!btn)return;const t=$(
   const tl=$('ne-tools'),r=!btn.hidden&&document.body.classList.contains('desknotes')&&tl&&!tl.hidden?tl.getBoundingClientRect():null;btn.style.bottom=r&&r.height?innerHeight-r.top+12+'px':''}
 function neGoBottom(){const b=neBody();b.scrollTo({top:b.scrollHeight,behavior:'smooth'});if(neEdit){const t=$('ne-text');t.focus({preventScroll:true});t.setSelectionRange(t.value.length,t.value.length);setTimeout(()=>b.scrollTo({top:b.scrollHeight,behavior:'smooth'}),60)}}
 function neToBottom(){if(S.ob.bottomUp===false)return;const b=neBody();b.scrollTop=b.scrollHeight}
-function saveNote(){if(!curNote)return;const was=curNote.body;curNote.body=$('ne-text').value;curNote.updated=Date.now();if(was!==curNote.body)logDo('note',curNote.title,'Nota editada',curNote.id);snapshot(curNote);save()}
+function saveNote(){if(!curNote)return;const was=curNote.body;let v=$('ne-text').value;
+  /* La fecha automática que sigue sin nada debajo no se guarda; si ya no está, es que se ha borrado a mano */
+  if(dayPend&&dayPend.n===curNote){const t=v.replace(/\s+$/,''),i=t.lastIndexOf('\n')+1;if(t.slice(i)===dayPend.head)v=t.slice(0,i).replace(/\s+$/,'')+dayPend.tail;else if(v.indexOf(dayPend.head)<0){curNote.daySkip=dayPend.k;dayPend=null}}
+  curNote.body=v;curNote.updated=Date.now();if(was!==curNote.body)logDo('note',curNote.title,'Nota editada',curNote.id);snapshot(curNote);save()}
 $('ne-text').addEventListener('input',()=>{const ta=$('ne-text'),nearEnd=ta.value.length-ta.selectionEnd<80;autoGrow();edHL();if(nearEnd)neToBottom();neDownBtn();clearTimeout(neSaveT);neSaveT=setTimeout(()=>{saveNote();renderNoteMeta();renderNoteCol();deskStatus()},350);suggest()});
 $('ne-title').addEventListener('input',e=>{if(!curNote)return;const old=curNote.title,nw=e.target.value;curNote.title=nw;curNote.updated=Date.now();clearTimeout(neSaveT);
   neSaveT=setTimeout(()=>{if(old&&nw&&old!==nw&&S.ob.autoLinks)S.notes.forEach(o=>{if(o!==curNote&&o.body.includes('[['+old)){o.body=o.body.split('[['+old+']]').join('[['+nw+']]').split('[['+old+'|').join('[['+nw+'|').split('[['+old+'#').join('[['+nw+'#')}});save();renderNoteMeta();if(document.body.classList.contains('desknotes')&&S.obPanel==='files')renderNotes();renderDeskTabs()},500)});
@@ -8133,7 +8154,7 @@ $('nm-pin').onclick=()=>{$('nm-sheet').hidden=true;if(isBm(curNote.id)){S.bookma
 const SV=d=>`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 const TOOLS=[
  ['undo',SV('<path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>'),'Deshacer'],['redo',SV('<path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/>'),'Rehacer'],
- ['head','<b class="tH">H</b>','Encabezado (H1 → H2 → H3)'],['bold','<b>B</b>','Negrita'],['ital','<i class="tI">I</i>','Cursiva'],['strike','<s>S</s>','Tachado'],['mark','<mark class="tM">ab</mark>','Resaltado'],['size','<b class="tH">Aa</b>','Tamaño y color del texto'],
+ ['head','<b class="tH">H</b>','Encabezado (H1 → H2 → H3)'],['date',SV('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'),'Fecha de hoy'],['bold','<b>B</b>','Negrita'],['ital','<i class="tI">I</i>','Cursiva'],['strike','<s>S</s>','Tachado'],['mark','<mark class="tM">ab</mark>','Resaltado'],['size','<b class="tH">Aa</b>','Tamaño y color del texto'],
  ['bul',SV('<circle cx="5" cy="7" r="1.3" fill="currentColor"/><circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="5" cy="17" r="1.3" fill="currentColor"/><path d="M10 7h10M10 12h10M10 17h10"/>'),'Lista'],
  ['task',SV('<rect x="3.5" y="4" width="7" height="7" rx="1.5"/><path d="m5.5 7.5 1.3 1.3 2.2-2.5M14 7.5h7M3.5 15h7v5h-7zM14 17.5h7"/>'),'Tarea'],
  ['num',SV('<path d="M10 7h10M10 12h10M10 17h10"/><path d="M4 5.5 5.5 4.5V10M4 14.5a1.4 1.4 0 0 1 2.7.4c0 .9-2.7 2.2-2.7 3.1h2.8" stroke-width="1.6"/>'),'Lista numerada'],
@@ -8142,7 +8163,7 @@ const TOOLS=[
  ['callout',SV('<path d="M12 3 2 21h20z"/><path d="M12 10v5M12 18h.01"/>'),'Aviso'],['codeblock',SV('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="m9 10-2 2 2 2M15 10l2 2-2 2"/>'),'Bloque de código'],
  ['table',SV('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M10 4v16"/>'),'Tabla'],['hr',SV('<path d="M4 12h16"/>'),'Separador'],
  ['clip',SV('<path d="M21 11.5l-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l8.6-8.6a3.7 3.7 0 0 1 5.2 5.2l-8.6 8.6a1.8 1.8 0 0 1-2.6-2.6l7.9-7.9"/>'),'Adjuntar archivo'],
- ['img',SV('<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 17-5-5-9 8"/>'),'Imagen'],['date',SV('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'),'Fecha de hoy']];
+ ['img',SV('<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 17-5-5-9 8"/>'),'Imagen']];
 $('ne-tools').innerHTML=TOOLS.map(([k,ic,t])=>`<button data-tool="${k}" aria-label="${t}" title="${t}">${ic}</button>`).join('')+'<input type="file" id="ne-img" accept="image/*" hidden>';
 const TA=()=>$('ne-text');
 /* Reemplaza un trozo conservando el historial de deshacer */
@@ -8174,6 +8195,10 @@ function edLineType(kind){let first=null;edLines((l,i,all)=>{const m=l.match(LP)
   return (kind==='head'?'':m[1])+np+body})}
 function edIndent(dir){const n=+S.ob.tabSize||2,sp=' '.repeat(n);edLines(l=>dir>0?sp+l:l.replace(new RegExp('^ {1,'+n+'}|^\\t'),''))}
 function edBlock(text,after){const ta=TA(),v=ta.value,s0=ta.selectionStart;const nl=s0&&v[s0-1]!=='\n'?'\n':'';insertAt(nl+text,after||'')}
+/* Fecha de hoy: en una línea vacía va como encabezado y deja el cursor debajo, listo para escribir; dentro de un texto, la fecha tal cual */
+function edDate(){const ta=TA(),v=ta.value,s0=ta.selectionStart,ls=v.lastIndexOf('\n',s0-1)+1;let le=v.indexOf('\n',ta.selectionEnd);if(le<0)le=v.length;
+  if(v.slice(ls,le).trim()){edInsert(dayLong(new Date()));return}
+  const t=dayHeadLine(new Date())+'\n';edRange(ls,le,t,ls+t.length)}
 $('ne-tools').addEventListener('pointerdown',e=>{if(e.target.closest('[data-tool]'))e.preventDefault()});
 $('ne-tools').addEventListener('mousedown',e=>{if(e.target.closest('[data-tool]'))e.preventDefault()});
 $('ne-tools').onclick=e=>{const b=e.target.closest('[data-tool]');if(!b)return;const k=b.dataset.tool,ta=TA();
@@ -8182,7 +8207,7 @@ $('ne-tools').onclick=e=>{const b=e.target.closest('[data-tool]');if(!b)return;c
     bul:()=>edLineType('bul'),task:()=>edLineType('task'),num:()=>edLineType('num'),quote:()=>edLineType('quote'),indent:()=>edIndent(1),outdent:()=>edIndent(-1),
     link:()=>{insertAt('[[',']]');suggest()},tag:()=>{const s0=ta.selectionStart,s1=ta.selectionEnd,sel=ta.value.slice(s0,s1).trim().replace(/\s+/g,'-');const pre=s0&&!/\s/.test(ta.value[s0-1])?' ':'';edRange(s0,s1,pre+'#'+sel,s0+pre.length+1+sel.length);suggest()},
     code:()=>edWrap('`','`'),callout:()=>edBlock('> [!note] Nota\n> '),codeblock:()=>edBlock('```\n','\n```'),table:()=>edBlock('| Columna | Columna |\n|---|---|\n| | |\n'),hr:()=>edBlock('\n---\n'),
-    date:()=>edInsert(new Date().toLocaleDateString(LOC,{weekday:'long',day:'numeric',month:'long',year:'numeric'})),
+    date:()=>edDate(),
     clip:()=>obSheet('Adjuntar',[{t:'Archivo',s:'PDF, Word, Excel, audio, vídeo, texto…',ic:'📎'},{t:'Imagen de la galería',ic:'🖼️'},{t:'Imagen libre sobre la nota',s:'Muévela y gírala como en Canva',ic:'🧩'}],i=>{if(i===0)pickAnyFile();else if(i===1){$('ne-img').value='';$('ne-img').click()}else addFreeImage()}),
     img:()=>obSheet('Imagen',[{t:'En el texto',s:'Se guarda como archivo de la bóveda'},{t:'Libre sobre la nota',s:'Muévela, gírala y cambia su tamaño como en Canva'}],i=>{if(i===0){$('ne-img').value='';$('ne-img').click()}else addFreeImage()})}[k]||(()=>{}))()};
 $('ne-img').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;readImage(f,1600,d=>{const at=addAttachment(d,attFolder());TA().focus();edInsert(`\n![[${at.name}]]\n`);renderNotes()})});
@@ -8262,6 +8287,7 @@ $('ne-text').addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&e.key==='b'){e.preventDefault();edWrap('**','**')}
   if((e.ctrlKey||e.metaKey)&&e.key==='i'){e.preventDefault();edWrap('*','*')}
   if((e.ctrlKey||e.metaKey)&&e.key==='e'){e.preventDefault();saveNote();setMode(false)}
+  if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&!e.altKey&&e.key==='d'){e.preventDefault();edDate()}
 });
 $('ne-read').addEventListener('dblclick',()=>setMode(true));
 
@@ -8293,6 +8319,8 @@ function openNoteMenuMobile(){if(!curNote)return;if(neEdit)saveNote();const n=cu
     {t:'Renombrar',s:n.title||'Sin título',ic:MI.rename},
     {t:'Mover a carpeta…',s:n.folder||'Sin carpeta',ic:MI.move},
     {t:'Vincular a una fecha',s:n.date?shortDate(n.date):'',ic:MI.cal},
+    {t:'Encabezado del día',s:'Arriba, con la fecha y la agenda de ese día',ic:MI.cal,fn:()=>dayHeaderAsk(n)},
+    {t:'Fecha automática cada día',s:n.dayAuto?'Activada: toca para quitarla':'Añade la fecha de hoy al final cuando escribes en un día nuevo',ic:MI.cal,fn:()=>dayAutoSet(n,!n.dayAuto)},
     {t:'Tamaño y color del texto',ic:MI.rename,fn:()=>openTextSheet(n)},
     {t:'Color del título',s:n.color?'Personalizado':'',ic:MI.rename,fn:()=>pickColor('Color de «'+(n.title||'Sin título')+'»',n.color,c=>{n.color=c;save();renderNotes();applyNoteStyle()})},
     {t:'Insertar plantilla',ic:MI.newnote},
@@ -8472,7 +8500,7 @@ function agendaHTML(k){const items=dayItems(k),d=fromKey(k);
 /* --- Sesión de enfoque (Timer ↔ nota) --- */
 function startFocus(n){if(!n)return;const mins=S.ob.timer.mins;S.focusNote=n.id;S.name=('Enfoque · '+(n.title||'Sin título')).slice(0,28);setLoop(false);setPeriod(mins*60);tReset();tStart();save();toast(`Enfoque de ${mins} min · ${n.title||'Sin título'}`)}
 function focusDone(){const n=nget(S.focusNote);S.focusNote=null;save();if(!n||!S.ob.timer.appendLog)return;
-  const line=`- ⏱ ${S.ob.timer.mins} min de enfoque · ${fmtDate(new Date(),'YYYY-MM-DD HH:mm')}`;n.body=n.body.replace(/\s*$/,'')+'\n'+line+'\n';n.updated=Date.now();save();if(curNote===n){if(neEdit)$('ne-text').value=n.body;else renderRead()}}
+  const line=`- ⏱ ${S.ob.timer.mins} min de enfoque · ${fmtDate(new Date(),'YYYY-MM-DD HH:mm')}`;n.body=n.body.replace(/\s*$/,'')+'\n'+line+'\n';n.updated=Date.now();save();if(curNote===n){if(neEdit){$('ne-text').value=n.body;dayAutoIns();autoGrow();edHL()}else renderRead()}}
 
 /* --- Selector rápido y paleta de comandos --- */
 let qsMode='note',qsCb=null,qsSkip=null,qsSel=0;
@@ -8485,6 +8513,8 @@ function COMMANDS(){const n=curNote,c=[];const add=(t,run,need,hk)=>c.push({t,ru
   add('Abrir vista de grafo',()=>openGraph());
   if(PL('templates'))add('Plantillas: insertar plantilla',insertTemplate,'note');
   add('Insertar encabezado del día',()=>dayHeaderAsk(n),'note');
+  add('Insertar la fecha de hoy como encabezado',()=>{if(!neEdit)setMode(true);const ta=$('ne-text'),v=ta.value,p=ta.selectionStart,ls=v.lastIndexOf('\n',p-1)+1;let le=v.indexOf('\n',p);if(le<0)le=v.length;if(v.slice(ls,le).trim())edRange(le,le,'\n',le+1);edDate()},'note','Ctrl+D');
+  add(n&&n.dayAuto?'Fecha automática cada día: desactivar':'Fecha automática cada día: activar',()=>dayAutoSet(n,!n.dayAuto),'note');
   add('Insertar fecha actual',()=>{if(!neEdit)setMode(true);insertAt(fmtDate(new Date(),S.ob.tpl.dateFmt),'')},'note');
   add('Insertar hora actual',()=>{if(!neEdit)setMode(true);insertAt(fmtDate(new Date(),S.ob.tpl.timeFmt),'')},'note');
   if(PL('calendar')){add('Calendario: insertar tarea con fecha',()=>{if(!neEdit)setMode(true);const ta=$('ne-text');const nl=ta.selectionStart&&ta.value[ta.selectionStart-1]!=='\n'?'\n':'';insertAt(nl+'- [ ] ',' 📅 '+dk(new Date()))},'note');
@@ -8798,6 +8828,8 @@ function renderWk(){document.querySelectorAll('#wk-seg button').forEach(b=>b.set
 document.querySelectorAll('#wk-seg button').forEach(b=>b.onclick=()=>{S.weekStart=b.dataset.wk==='auto'?'auto':+b.dataset.wk;save();renderWk();renderCal();renderAlarms()});
 /* Cada cuánto se rehace el «En 15 min» de las notificaciones que siguen a la vista; al empezar pasan a «Ahora» y al acabar se quitan solas */
 $('avrf-sel').value=String(S.avRefresh==null?10:S.avRefresh);$('avrf-sel').onchange=e=>{S.avRefresh=+e.target.value;save()};
+/* Tamaño de letra de los widgets: se aplica al momento, sin esperar al tic del minuto */
+$('wfs-sel').value=String(wFs());if($('wfs-sel').selectedIndex<0)$('wfs-sel').value='1';$('wfs-sel').onchange=e=>{S.wFs=+e.target.value;save();pushWidgets()};
 $('snooze-sel').value=S.snooze;$('snooze-sel').onchange=e=>{S.snooze=+e.target.value;save();$('ring-snooze').textContent='Posponer '+S.snooze+' min'};
 function renderAll(){renderCal();renderAlarms();renderCities();renderClock();renderLaps();renderPresets();renderSwLaps();renderAviso();renderSounds();if(view==='circ')renderCircuit();if(!$('dayview').hidden)renderDay();if(!$('tasksview').hidden)renderTasks();if(!$('searchview').hidden)runSearch()}
 
@@ -9344,7 +9376,7 @@ $('bks-guide').onclick=()=>{const cat=typeof bkSel!=='undefined'?bkSel:'',m={gym
 
 /* Permisos que necesitan los avisos con el móvil bloqueado */
 const PERMS=[['notifications','Notificaciones','Para ver los avisos en la pantalla de bloqueo'],['fullScreen','Alarma a pantalla completa','La alarma se abre encima del bloqueo'],['battery','Sin restricciones de batería','Evita que el sistema retrase avisos y widgets']];
-async function renderPerms(){if(!natSound())return;$('avrf-row').hidden=false;$('duck-note').hidden=true;let st=null;try{st=await VTNative.permStatus()}catch(e){}if(!st)return;
+async function renderPerms(){if(!natSound())return;$('avrf-row').hidden=false;$('wfs-row').hidden=false;$('duck-note').hidden=true;let st=null;try{st=await VTNative.permStatus()}catch(e){}if(!st)return;
   $('perm-label').hidden=false;$('perm-list').hidden=false;
   $('perm-list').innerHTML=PERMS.map(([k,t,d],i)=>`<button class="row${i===0?' first':''}${i===PERMS.length-1?' last':''}" data-perm="${k}"><span class="txt"><span class="t1" style="display:block">${t}</span><span class="t2" style="display:block">${d}</span></span><span class="perm-st${st[k]?' ok':''}">${st[k]?'Activo':'Activar'}</span></button>`).join('')}
 $('perm-list').onclick=e=>{const b=e.target.closest('[data-perm]');if(b)VTNative.openPerm(b.dataset.perm)};
@@ -9646,6 +9678,8 @@ const GEL=new WeakMap(),gelOf=el=>{let g=GEL.get(el);if(!g){g={x:0,y:0,s:1,l:0,v
     const HOLE_SKIP='input,textarea,select,[contenteditable="true"],canvas,.lg-host,body:not(.desk) .nav-set,.tp-dial,.ne-text,#ne-text,.cm-editor';
     let hp=null;const hpEnd=()=>{if(!hp)return;clearTimeout(hp.tm);if(hp.H)hp.H.str(0);hp=null};
     document.addEventListener('pointerdown',e=>{hpEnd();if(RM.matches||(e.pointerType==='mouse'&&e.button>2)||!e.target.closest)return;if(e.target.closest(HOLE_SKIP)||e.pointerType==='mouse'&&sobreTexto(e.clientX,e.clientY))return;
+      /* Dentro de la nota abierta no hay burbuja, ni con el dedo ni con el ratón: estorbaba al leer y al seleccionar texto. Sigue en la lista de carpetas, en los botones de arriba y en la barra de formato */
+      if(e.target.closest('.ne-body')&&!e.target.closest('.ne-down'))return;
       const el=e.target.closest(LG_PRESS+',button,[role=button],a,.chip,.mchip,.bk-b,.wk-ev'),r=el&&el.getBoundingClientRect();
       /* Los controles, también los anchos (filas, botones de toda la anchura), curvan la luz con su forma y centrados en ellos */
       if(el&&r.width&&r.width<=720&&r.height<=130){const mk=()=>{const q=el.getBoundingClientRect();if(!q.width)return null;const rad=parseFloat(getComputedStyle(el).borderTopLeftRadius)||0,R=Math.max(16,Math.min(40,Math.min(q.width,q.height)*.3+10)),H=window.lgHole(q.width,q.height,rad,R);return H&&H.at(q.left+q.width/2,q.top+q.height/2).track(el).str(1)};
@@ -9870,7 +9904,7 @@ window.VTAPI={
       days[k]={hol:(holOn(k)||[])[0]||'',day:evs.filter(e=>evVisible(e)&&(e.kind!=='task'||e.start)).map(row).sort(ord),blocks:evs.filter(e=>e.cat).map(row).sort(ord)}}
     const pack=(id,notes,folders)=>{const v=S.vaults.find(x=>x.id===id)||{};return {id,name:v.name||'Notas',tc:v.titleColor||'',fc:v.fc||{},folders:[...new Set(folders.concat(notes.map(n=>n.folder||'').filter(Boolean)).flatMap(f=>{const o=[];while(f){o.push(f);f=parentOf(f)}return o}))].sort(cmpName),notes:notes.filter(x=>!isCanvas(x)&&!x.trashed).sort((p,q)=>cmpName(p.title||'',q.title||'')).slice(0,400).map(x=>({id:x.id,t:x.title||T('Sin título'),f:x.folder||'',c:x.color||''}))}};
     const vaults=S.vaults.map(v=>v.id===S.curVault?pack(v.id,S.notes,S.folders):pack(v.id,(S.vaultData[v.id]||{}).notes||[],(S.vaultData[v.id]||{}).folders||[]));
-    return {accent:VTAPI.accentHex(),weekStart:S.weekStart==='auto'?1:+S.weekStart,curVault:S.curVault,vaults,regs:regPublic(),alarms:S.alarms.map(x=>({id:x.id,t:x.t,on:!!x.on,label:(x.label||T('Alarma'))+' · '+daysTxt(x.days)})),timer:{name:S.hide?'Temporizador':(S.name||'Temporizador'),running,endAt,remain:running?Math.max(0,endAt-Date.now()):remain,period:S.period*1000,lap,loop:!!S.loop},
+    return {accent:VTAPI.accentHex(),fs:wFs(),weekStart:S.weekStart==='auto'?1:+S.weekStart,curVault:S.curVault,vaults,regs:regPublic(),alarms:S.alarms.map(x=>({id:x.id,t:x.t,on:!!x.on,label:(x.label||T('Alarma'))+' · '+daysTxt(x.days)})),timer:{name:S.hide?'Temporizador':(S.name||'Temporizador'),running,endAt,remain:running?Math.max(0,endAt-Date.now()):remain,period:S.period*1000,lap,loop:!!S.loop},
       alarm:n?{at:+n.d,time:n.a.t,sub:(n.a.label||'Alarma')+' · '+cap(n.d.toLocaleDateString(LOC,{weekday:'long'}))}:null,days,pulse:pulseData()}},
   /* El color de acento, en #rrggbb, para los widgets */
   accentHex(){const c=document.createElement('canvas').getContext('2d');c.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();return c.fillStyle},

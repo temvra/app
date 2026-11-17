@@ -43,6 +43,9 @@ Se prueba en un móvil Android, en un PC con Linux y en tableta.
 - En RemoteViews solo valen layouts y vistas permitidas (FrameLayout, LinearLayout, TextView, ImageView, TextClock, Chronometer, ProgressBar…). No uses `View` como separador: usa un `LinearLayout` vacío.
 - Los datos de los widgets llegan de JS (`VTAPI.widgetData()`) y se guardan en SharedPreferences; el tic de cada minuto (`WidgetTick`) los refresca sin abrir la app.
 - `android:allowBackup="true"` devuelve datos viejos al reinstalar: tenlo en cuenta al probar.
+- Tamaño de letra de los widgets: lo elige el usuario en Ajustes (`S.wFs`, llega como `fs` en `widgetData()`). Todo texto de un widget pasa por `Widgets.size(v, id, sp * k)` con `k = Widgets.fs(d)`; lo que va en una caja de alto o ancho fijo usa `fsBox(k)` y agranda la caja con `setViewLayoutHeight/Width` (Android 12+). Con `k = 1` nada debe cambiar.
+- Los altos y anchos de texto se miden con `Widgets.lineDp` y `Widgets.textPaint` (la letra real del sistema), no con proporciones fijas: en ColorOS, con la fuente del usuario, el texto es más ancho de lo que mide un `Paint` nuevo.
+- Sonda de widgets (solo debug, `android/app/src/debug`): `adb shell am start -S -n com.temvra.app.personal.prueba/com.temvra.app.WidgetProbe --ef fs 1.3 [--es only pulse,line] [--ei w 340 --ei h 180]` pinta los widgets dentro de la app con datos de ejemplo y escribe en logcat (`-s 'TemvraProbe:*'`) el tamaño de cada texto y los que se cortan. Úsala al tocar un layout o un cálculo de widget.
 - Sin el SDK de Android a mano, la compilación se comprueba en GitHub Actions. Valida al menos que los XML estén bien formados y que todo recurso nuevo esté declarado (manifest, `strings.xml`, `res/xml`).
 
 ## Escritorio (Electron)
@@ -62,6 +65,7 @@ Se prueba en un móvil Android, en un PC con Linux y en tableta.
 - Rendimiento: con CDP `Emulation.setCPUThrottlingRate {rate:4}` para parecerse a un móvil, mide fotogramas con `requestAnimationFrame` y `Performance.getMetrics` (`TaskDuration`) en reposo y en las transiciones. En la app hay un medidor de fps (Ajustes › Rendimiento) que copia un informe por vistas.
 - Carpeta real: en el navegador define `window.__dirTestBackend` con `addInitScript` (`kind`, `pick`, `list`, `read`, `write`, `trash`, `move`, `mkdir` sobre un objeto en memoria). En Electron, escribe `carpetas.json` (array con la ruta) en el perfil temporal para permitir una carpeta sin el diálogo. Electron como root necesita `--no-sandbox`.
 - Sincronización con GitHub: no uses la API real; simula `api.github.com` con un servidor git en memoria (refs, commits, trees, blobs) compartido por dos contextos del navegador.
+- Versión de pruebas que convive con la normal (`com.temvra.app.personal.prueba`, «Temvra Prueba»): `cd android && ./gradlew assemblePersonalDebug -Pprueba`.
 - Android: con el móvil conectado por USB, `npm run apk` y `adb install -r android/app/build/outputs/apk/personal/debug/app-personal-debug.apk`; logs con `adb logcat | grep -i temvra`.
 
 ## Versión de Google Play

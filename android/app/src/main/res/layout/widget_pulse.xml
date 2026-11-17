@@ -29,7 +29,7 @@
                 <TextView android:id="@+id/wp_w1" android:layout_width="match_parent" android:layout_height="wrap_content" android:ellipsize="end" android:maxLines="1" android:textColor="#8FF6F6FA" android:textSize="12sp" />
             </LinearLayout>
             <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:gravity="end" android:orientation="vertical">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:letterSpacing="0.08" android:text="EN" android:textColor="#8FF6F6FA" android:textSize="9sp" />
+                <TextView android:id="@+id/wp_in1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:letterSpacing="0.08" android:text="EN" android:textColor="#8FF6F6FA" android:textSize="9sp" />
                 <Chronometer android:id="@+id/wp_c1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="sans-serif-medium" android:textColor="#FF787C" android:textSize="17sp" />
                 <TextView android:id="@+id/wp_x1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="sans-serif-medium" android:maxLines="1" android:textColor="#FF787C" android:textSize="15sp" android:visibility="gone" />
             </LinearLayout>
@@ -41,7 +41,7 @@
                 <TextView android:id="@+id/wp_w2" android:layout_width="match_parent" android:layout_height="wrap_content" android:ellipsize="end" android:maxLines="1" android:textColor="#8FF6F6FA" android:textSize="11.5sp" />
             </LinearLayout>
             <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:gravity="end" android:orientation="vertical">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:letterSpacing="0.08" android:text="EN" android:textColor="#8FF6F6FA" android:textSize="9sp" />
+                <TextView android:id="@+id/wp_in2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:letterSpacing="0.08" android:text="EN" android:textColor="#8FF6F6FA" android:textSize="9sp" />
                 <Chronometer android:id="@+id/wp_c2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="sans-serif-medium" android:textColor="#FF787C" android:textSize="15sp" />
                 <TextView android:id="@+id/wp_x2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="sans-serif-medium" android:maxLines="1" android:textColor="#FF787C" android:textSize="14sp" android:visibility="gone" />
             </LinearLayout>
