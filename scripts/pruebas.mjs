@@ -139,6 +139,34 @@ async function avisoTarde(a){
   ok(r.visible&&/^Hace 2[01] min · a las \d\d:\d\d$/.test(r.texto),'avisos: si salen tarde dicen cuánto hace que empezó',r);
   ok(r.fila,'avisos: «Actualizar avisos cada» solo sale en Android')}
 
+/* Sincronizar con GitHub varias veces seguidas. scripts/github-falso.js hace de GitHub y de caché del navegador. Antes, una segunda
+   sincronización en menos de un minuto leía la rama de la caché, partía de un estado viejo y GitHub la rechazaba («422 · Update is not
+   a fast forward»); y la comprobación periódica volvía a traer la versión anterior de la nota recién subida */
+async function sincroniza(a){
+  await a.ev(fs.readFileSync(path.join(root,'scripts/github-falso.js'),'utf8'));
+  const r=await a.ev(`(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms)),S=VTAPI.state(),G=window.__gh,vn=document.getElementById('vn-sync'),ap=document.getElementById('ap-now'),t=document.getElementById('toast'),avisos=[];await G.listo;
+    const mo=new MutationObserver(()=>{if(!t.hidden&&t.textContent&&avisos[avisos.length-1]!==t.textContent)avisos.push(t.textContent)});mo.observe(t,{childList:true,characterData:true,subtree:true,attributes:true});
+    const quieto=async()=>{for(let k=0,q=0;k<200&&q<4;k++){await w(100);q=!vn.classList.contains('spin')&&!window.__apBusy?q+1:0}},notas=async()=>{await quieto();vn.click();await w(200);await quieto()},agenda=async()=>{await quieto();ap.disabled=false;ap.click();await w(200);await quieto()};
+    if(!document.getElementById('ne-edit').hidden){document.getElementById('ne-mode').click();await w(400)}
+    S.gh.token='de_prueba';S.gh.links=S.gh.links||{};S.gh.links[S.curVault]={repo:'qa/boveda',branch:'main'};
+    const n=S.notes.find(x=>x.id==='nqa1'),o={};
+    await notas();o.primera=G.texto('Prueba.md')===n.body;
+    await agenda();o.errAgenda=S.gh.app.err;o.agenda=o.errAgenda===''&&G.archivos().some(p=>p.startsWith('.temvra/'))&&S.gh.app.head===G.head;
+    n.body+='\\nSegunda subida.\\n';n.updated=Date.now();await notas();o.segunda=G.texto('Prueba.md')===n.body;
+    /* La comprobación periódica (aquí, al volver a la app) no debe traer de vuelta la versión anterior */
+    const cuerpo=n.body;Object.defineProperty(document,'hidden',{get:()=>false,configurable:true});
+    document.dispatchEvent(new Event('visibilitychange'));await w(900);await quieto();await w(600);await quieto();delete document.hidden;
+    o.sinVueltaAtras=n.body===cuerpo&&G.texto('Prueba.md')===cuerpo;
+    /* Otro dispositivo sube algo justo mientras este sube una nota: se repite sobre lo nuevo, sin volver a subir el archivo */
+    const antes=G.log.length;G.alCommit=()=>G.ajeno('.otros/ajeno.txt','de otro dispositivo');n.body+='\\nTercera.\\n';n.updated=Date.now();await notas();
+    const tramo=G.log.slice(antes);o.carrera=G.texto('Prueba.md')===n.body&&G.texto('.otros/ajeno.txt')==='de otro dispositivo';o.rechazos=tramo.filter(x=>x.m==='PATCH'&&x.st===422).length;o.blobs=tramo.filter(x=>x.m==='POST'&&x.ruta==='/git/blobs').length;
+    o.conCache=G.log.filter(x=>x.m==='GET'&&x.modo!=='no-store').length;o.viejas=G.log.filter(x=>x.cache).length;o.copias=S.notes.filter(x=>/\\(GitHub\\)/.test(x.title)).length;
+    mo.disconnect();delete S.gh.links[S.curVault];G.quita();o.avisos=avisos.filter(x=>/GitHub|Sincroniz/.test(x)).slice(-12);return o})()`);
+  ok(r.primera&&r.agenda&&r.segunda,'sincronizar: notas, agenda y otra vez notas en el mismo minuto suben bien',r);
+  ok(r.sinVueltaAtras&&!r.copias,'sincronizar: la comprobación periódica no trae de vuelta la versión anterior de una nota recién subida',r);
+  ok(r.carrera&&r.rechazos===1&&r.blobs===1,'sincronizar: si otro dispositivo sube a la vez, se repite sobre lo nuevo sin volver a subir el archivo',r);
+  ok(!r.conCache&&!r.viejas&&!r.avisos.some(x=>/422|fast forward/i.test(x)),'sincronizar: las lecturas a GitHub van sin caché y no sale el error 422',r)}
+
 /* Sin categorías también se puede crear un bloque: se toca un hueco de la línea de tiempo y se elige Bloque.
    El hueco se busca en pantalla: la vista Día se coloca en la hora actual y un punto fijo, por la noche, cae en la cabecera del día siguiente */
 async function bloque(a){
@@ -164,7 +192,7 @@ try{
   const pc=await abre(9701,[1440,900]);
   const r=await vacio(pc,true);ok(r.vistas===7&&r.panel,'PC: todas las vistas de la Agenda y panel de días junto al Mes',r);
   await sinVisita(pc);await centrar(pc);await aro(pc,true);await guardado(pc);await token(pc);
-  await encabezado(pc);await burbujaNota(pc);await fechaHoy(pc);await letraWidgets(pc);await avisoTarde(pc);
+  await encabezado(pc);await burbujaNota(pc);await fechaHoy(pc);await letraWidgets(pc);await avisoTarde(pc);await sincroniza(pc);
   ok(!pc.errores.length,'PC: sin errores de JavaScript',pc.errores);pc.cierra();
   console.log('— Móvil 412×915');
   const mv=await abre(9702,[412,915],true);

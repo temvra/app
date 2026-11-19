@@ -7522,8 +7522,11 @@ function ghCancel(){if(!ghMode)return false;ghMode=null;$('gh-cmd').type='text';
 $('gh-cmd').addEventListener('keydown',e=>{if(e.key==='Escape'&&ghCancel()){e.preventDefault();e.stopPropagation()}});
 $('gh-form').onsubmit=e=>{e.preventDefault();const v=$('gh-cmd').value;$('gh-cmd').value='';ghRun(v)};
 function ghAsk(prompt,mode,secret){ghMode=mode;ghPrint(prompt,'ask');$('gh-cmd').type=secret?'password':'text';$('gh-cmd').placeholder=secret?'pega aquí el token':'escribe y pulsa Intro';$('gh-cmd').focus()}
+/* Sin caché: GitHub responde «max-age=60» y en el PC el navegador reutilizaba un minuto la última lectura de la rama. Tras subir algo, la siguiente
+   sincronización partía del estado anterior: GitHub la rechazaba («422 · Update is not a fast forward») o volvía a traer lo viejo.
+   En Android no pasaba: allí fetch va por CapacitorHttp, que no guarda nada */
 async function ghApi(path,opt={}){
-  let r;try{r=await fetch('https://api.github.com'+path,{method:opt.method||'GET',headers:Object.assign({'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','Authorization':'Bearer '+(opt.token||S.gh.token)},opt.body?{'Content-Type':'application/json'}:{}),body:opt.body?JSON.stringify(opt.body):undefined})}
+  let r;try{r=await fetch('https://api.github.com'+path,{method:opt.method||'GET',cache:'no-store',headers:Object.assign({'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','Authorization':'Bearer '+(opt.token||S.gh.token)},opt.body?{'Content-Type':'application/json'}:{}),body:opt.body?JSON.stringify(opt.body):undefined})}
   catch(e){throw new Error('NET')}
   if(r.status===404&&opt.ok404)return null;if(r.status===409&&opt.ok409)return null;
   if(!r.ok){let m='';try{m=(await r.json()).message}catch(e){}throw new Error(r.status+(m?' · '+m:''))}
@@ -7606,7 +7609,7 @@ async function remoteTree(L){return (await ghHead(L)).rem}
 async function localMap(){const m={};for(const f of localFiles()){if(gitSkipRef(f.ref,f.kind==='n'))continue;m[f.path]={sha:await fileSha(f),f}}return m}
 let ghBusy=false;const ghN=(k,s,p)=>k+' '+(k===1?s:p);
 /* fin: 1 terminó bien, 2 con conflictos (no se sube nada solo hasta que cambies algo), 0 con error */
-async function ghSync(L,mode,cmsg){if(window.__apBusy||window.__dirBusy)await new Promise(r=>{const t0=Date.now(),iv=setInterval(()=>{if(!window.__apBusy&&!window.__dirBusy||Date.now()-t0>8000){clearInterval(iv);r()}},150)});
+async function ghSync(L,mode,cmsg,tries,sent){tries=tries|0;sent=sent||new Map();if(window.__apBusy||window.__dirBusy)await new Promise(r=>{const t0=Date.now(),iv=setInterval(()=>{if(!window.__apBusy&&!window.__dirBusy||Date.now()-t0>8000){clearInterval(iv);r()}},150)});
   if(ghBusy){ghPrint('Ya hay una sincronización en marcha…','dim');return}ghBusy=true;syncBtn();let fin=1;try{
   ghPrint(mode==='push'?'Leyendo el repositorio…':'Descargando cambios…','dim');
   let H=await ghHead(L);const base=L.base||{};
@@ -7619,20 +7622,22 @@ async function ghSync(L,mode,cmsg){if(window.__apBusy||window.__dirBusy)await ne
   if(L.code){L.base=H.rem;L.at=Date.now();save();ghPrint(`✖ ${esc(L.repo)} es un repositorio de código, no una bóveda: no se sube nada para no tocar su código. Vincula Notas a un repositorio solo para notas (por ejemplo con <b>gh repo create notas</b>).`,'err');if(!ghQuiet)toast('GitHub: '+L.repo+' es de código; vincula Notas a otro repositorio');return}
   const loc=await localMap(),entries=[];let up=0,del=0;
   for(const [p,x] of Object.entries(loc)){if(H.rem[p]===x.sha||ghCodeSkip(L,p))continue;
-    const blob=await ghApi(`/repos/${L.repo}/git/blobs`,{method:'POST',body:{content:x.f.kind==='a'?x.f.b64:b64e(x.f.ref.body),encoding:'base64'}});
-    entries.push({path:p,mode:'100644',type:'blob',sha:blob.sha});up++;ghPrint('⬆ '+esc(p),'dim')}
+    let bs=sent.get(x.sha);if(!bs){bs=(await ghApi(`/repos/${L.repo}/git/blobs`,{method:'POST',body:{content:x.f.kind==='a'?x.f.b64:b64e(x.f.ref.body),encoding:'base64'}})).sha;sent.set(x.sha,bs)}
+    entries.push({path:p,mode:'100644',type:'blob',sha:bs});up++;ghPrint('⬆ '+esc(p),'dim')}
   for(const p of Object.keys(H.rem))if(!loc[p]&&base[p]===H.rem[p]&&!gitSkipPath(p)){entries.push({path:p,mode:'100644',type:'blob',sha:null});del++;ghPrint('✕ '+esc(p),'dim')}
   if(!entries.length){L.base=H.rem;L.at=Date.now();save();ghPrint('Push: todo al día (Everything up-to-date)','ok');if(!ghQuiet)toast('GitHub: todo al día');return}
   const tree=await ghApi(`/repos/${L.repo}/git/trees`,{method:'POST',body:{base_tree:H.tree,tree:entries}});
   const msg=(cmsg||'').trim()||`Temvra Notas: ${up?ghN(up,'cambio','cambios'):''}${up&&del?', ':''}${del?ghN(del,'borrado','borrados'):''} · ${new Date().toLocaleString(LOC)}`;
   const cm=await ghApi(`/repos/${L.repo}/git/commits`,{method:'POST',body:{message:msg,tree:tree.sha,parents:[H.head]}});
-  await ghApi(`/repos/${L.repo}/git/refs/heads/${ghPath(L.branch||'main')}`,{method:'PATCH',body:{sha:cm.sha}});
+  /* Si otro dispositivo (o la agenda de este) ha subido algo mientras tanto, GitHub no deja mover la rama: se repite sobre lo nuevo, sin volver a subir los archivos (sent) */
+  try{await ghApi(`/repos/${L.repo}/git/refs/heads/${ghPath(L.branch||'main')}`,{method:'PATCH',body:{sha:cm.sha}})}catch(e){if(/^422/.test(e.message)&&tries<2){fin=3;ghPrint('GitHub ha cambiado mientras se subía: se repite sobre lo nuevo…','dim');return}throw e}
   const nrem={...H.rem};entries.forEach(e=>{if(e.sha)nrem[e.path]=e.sha;else delete nrem[e.path]});L.base=nrem;L.at=Date.now();save();
   ghPrint(`✔ Push: 1 commit (${cm.sha.slice(0,7)}) · ${ghN(up,'subido','subidos')}${del?', '+ghN(del,'borrado','borrados'):''}.`,'ok');toast('GitHub: '+[up?ghN(up,'subido','subidos'):'',del?ghN(del,'borrado','borrados'):''].filter(Boolean).join(', '))
 }catch(e){fin=0;ghTried='';ghErr(e)}finally{ghBusy=false;syncBtn();scmSoon(0);
   /* Tras un conflicto no se sube nada solo hasta el siguiente push (a mano o al cerrar una nota): antes hay que revisar las copias «(GitHub)» */
   if(fin===2){clearTimeout(ghDT);ghDT=0;if(!L.conf){L.conf=1;save()}}else if(fin===1&&mode==='push'&&L.conf){delete L.conf;save()}
-  if(fin===1)ghDirty('pendiente')}}
+  if(fin===1)ghDirty('pendiente');
+  if(fin===3)return ghSync(L,mode,cmsg,tries+1,sent)}}
 /* Botón de sincronizar de Notas: sin GitHub vinculado lleva a conectarlo; con él, baja lo nuevo y sube lo tuyo */
 function syncBtn(){const L=ghLink(),on=!!(S.gh&&S.gh.token&&L),t=on?'Sincronizar con GitHub · '+L.repo:'Sincronizar entre dispositivos: conecta GitHub';
   ['ob-sync','vn-sync'].forEach(i=>{const b=$(i);if(!b)return;b.classList.toggle('spin',ghBusy);b.classList.toggle('off',!on);b.title=t;b.setAttribute('aria-label',t)})}
