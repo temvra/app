@@ -18,10 +18,15 @@ async function abre(puerto,[w,h],movil=false){
   const send=(method,params={})=>new Promise(r=>{const i=++id;P.set(i,r);ws.send(JSON.stringify({id:i,method,params}))});
   const ev=async x=>{const r=await send('Runtime.evaluate',{expression:x,awaitPromise:true,returnByValue:true});if(r.result.exceptionDetails)throw new Error(r.result.exceptionDetails.exception?.description||r.result.exceptionDetails.text);return r.result.result.value};
   const raton=(type,x,y,buttons=0,button='none')=>send('Input.dispatchMouseEvent',{type,x,y,button,buttons,clickCount:type==='mouseMoved'?0:1});
+  const rueda=(x,y,dy,mods=0)=>send('Input.dispatchMouseEvent',{type:'mouseWheel',x,y,deltaX:0,deltaY:dy,modifiers:mods});
+  /* mods: 2 = Ctrl, 8 = Mayús */
+  const VK={'+':187,'-':189,'0':48,Delete:46,F2:113,ArrowUp:38,ArrowDown:40,Escape:27};
+  const tecla=async(key,mods=0)=>{const code=VK[key]||key.toUpperCase().charCodeAt(0),p={key,code:key.length===1?(/[a-z]/i.test(key)?'Key'+key.toUpperCase():/[0-9]/.test(key)?'Digit'+key:key==='+'?'Equal':'Minus'):key,modifiers:mods,windowsVirtualKeyCode:code,nativeVirtualKeyCode:code};
+    await send('Input.dispatchKeyEvent',Object.assign({type:'rawKeyDown'},p));await send('Input.dispatchKeyEvent',Object.assign({type:'keyUp'},p))};
   await send('Runtime.enable');await send('Page.enable');await send('Emulation.setDeviceMetricsOverride',{width:w,height:h,deviceScaleFactor:1,mobile:movil});
   const listo=async()=>{for(let i=0;i<60;i++){try{if(await ev(`typeof VTAPI==='object'&&!!document.querySelector('.nav [data-view=cal]')`))return}catch(e){}await sleep(150)}throw new Error('la app no termina de cargar')};
   const recarga=async()=>{await send('Page.reload');await sleep(400);await listo();await sleep(500)};
-  const a={ev,raton,errores,recarga,cierra(){try{ws.close()}catch(e){}proc.kill()}};abiertas.push(a);await listo();await sleep(700);return a}
+  const a={ev,raton,rueda,tecla,send,errores,recarga,cierra(){try{ws.close()}catch(e){}proc.kill()}};abiertas.push(a);await listo();await sleep(700);return a}
 
 const agenda=`(async()=>{const a=document.querySelector('.nav [data-view=cal]');if(a.getAttribute('aria-current')!=='page')a.click();await new Promise(r=>setTimeout(r,1000));document.querySelector('#cal-vseg [data-cv=month]').click();await new Promise(r=>setTimeout(r,1300))})()`;
 const toque=`document.querySelector('#cal-vseg [aria-pressed="false"]').click()`;
@@ -167,6 +172,121 @@ async function sincroniza(a){
   ok(r.carrera&&r.rechazos===1&&r.blobs===1,'sincronizar: si otro dispositivo sube a la vez, se repite sobre lo nuevo sin volver a subir el archivo',r);
   ok(!r.conCache&&!r.viejas&&!r.avisos.some(x=>/422|fast forward/i.test(x)),'sincronizar: las lecturas a GitHub van sin caché y no sale el error 422',r)}
 
+/* Notas en el PC: ordenar arrastrando con orden alfabético (el nivel pasa a orden propio), una carpeta abierta arrastra su contenido,
+   Ctrl+Z / Ctrl+Y deshacen y rehacen, F2 y Supr, pegar texto en un hueco crea una nota sin nombre resaltada, soltar archivos desde fuera
+   lleva a Notas y los mete en la carpeta de debajo, y una nota arrastrada fuera de la ventana sale como archivo */
+const NBASE=`const t=Date.now();S.folders=['Alfa','Beta','Gamma'];S.notes=[];const add=(id,title,folder)=>S.notes.push({id,title,folder,pinned:false,created:t-S.notes.length*1000,updated:t-S.notes.length*1000,body:'Texto de '+title});
+  add('k1','Uno','Alfa');add('k2','Dos','Alfa');add('k3','Tres','Beta');add('k5','Cinco','Gamma');add('k6','Seis','');add('k7','Siete','');S.atts=[];
+  S.obOpen={Alfa:true,Beta:true,Gamma:true};S.obPanel='files';S.obOrder={};S.obFolderSort={};S.obSort='az';S.obFSort='az';`;
+async function notasPC(a){
+  /* Con dos columnas (menos de 1100 px) las notas están en el árbol; al final se prueba también la columna central de tres */
+  await a.send('Emulation.setDeviceMetricsOverride',{width:1000,height:800,deviceScaleFactor:1,mobile:false});await sleep(300);
+  /* El aviso de avisoTarde() tapa las primeras filas: se quita con su evento */
+  await a.ev(`(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms)),S=VTAPI.state();${NBASE};S.events=S.events.filter(e=>e.id!=='eqa2');document.getElementById('banner').hidden=true;document.querySelector('.nav [data-view=cal]').click();await w(400);document.querySelector('.nav [data-view=notes]').click();await w(800);if(!document.getElementById('noteview').hidden)document.getElementById('ne-close').click();await w(300)})()`);
+  const tapa=await a.ev(`(()=>{const r=document.querySelector('#ob-list [data-folder="Alfa"]').getBoundingClientRect(),e=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return e&&e.closest('#ob-list')?'':(e.id||e.className||e.tagName)})()`);if(tapa)console.log('  (algo tapa la lista:',tapa,')');
+  const filas=()=>a.ev(`[...document.querySelectorAll('#ob-list .ob-row')].map(r=>r.dataset.folder?'['+r.dataset.folder+']':(VTAPI.state().notes.find(n=>n.id===r.dataset.note)||{}).title).join(' ')`);
+  const centro=sel=>a.ev(`(()=>{const r=document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect();return [r.left+r.width/2,r.top+r.height/2,r.height]})()`);
+  const arrastra=async([x0,y0],[x1,y1],medio)=>{await a.raton('mouseMoved',x0,y0);await a.raton('mousePressed',x0,y0,1,'left');await sleep(80);let m=null;for(let i=1;i<=14;i++){await a.raton('mouseMoved',x0+(x1-x0)*i/14,y0+(y1-y0)*i/14,1,'left');await sleep(45);if(i===12&&medio)m=await a.ev(medio)}await sleep(300);await a.raton('mouseReleased',x1,y1,0,'left');await sleep(800);return m};
+  const lista=()=>a.ev(`document.getElementById('ob-list').focus()`),aviso=()=>a.ev(`document.getElementById('toast').textContent`);
+  const ini=await filas();let u=await centro('#ob-list [data-note="k1"]'),d=await centro('#ob-list [data-note="k2"]');await arrastra([d[0],d[1]],[u[0],u[1]+u[2]*.45]);
+  const r1={ini,fin:await filas(),modo:await a.ev(`VTAPI.state().obFolderSort.Alfa`)};
+  ok(r1.ini.startsWith('[Alfa] Dos Uno')&&r1.fin.startsWith('[Alfa] Uno Dos')&&r1.modo==='custom','notas: con orden alfabético se ordena arrastrando y la carpeta pasa a orden propio',r1);
+  const f=await centro('#ob-list [data-folder="Alfa"]'),g=await centro('#ob-list [data-folder="Gamma"]');
+  const medio=await arrastra([f[0],f[1]],[g[0],g[1]+g[2]*.9],`(()=>{const y=s=>document.querySelector(s).getBoundingClientRect().top;return {carpeta:y('#ob-list [data-folder="Alfa"]'),dentro:y('#ob-list [data-note="k1"]'),beta:y('#ob-list [data-folder="Beta"]')}})()`);
+  const r2={medio,fin:await filas()};
+  ok(r2.medio.dentro>r2.medio.carpeta&&r2.medio.carpeta>r2.medio.beta&&r2.fin==='[Beta] Tres [Gamma] Cinco [Alfa] Uno Dos Seis Siete','notas: una carpeta abierta se mueve con todo su contenido',r2);
+  await lista();await a.tecla('z',2);await sleep(500);const z1=await filas(),az1=await aviso();await a.tecla('y',2);await sleep(500);const y1=await filas();await a.tecla('z',2);await sleep(400);
+  ok(z1.startsWith('[Alfa] Uno Dos [Beta]')&&/^Deshecho: /.test(az1)&&y1.startsWith('[Beta]'),'notas: Ctrl+Z y Ctrl+Y deshacen y rehacen lo hecho con carpetas',{z1,az1,y1});
+  /* Hueco vacío + pegar texto */
+  const h=await a.ev(`(()=>{const L=document.getElementById('ob-list'),r=L.getBoundingClientRect(),rows=[...L.querySelectorAll('.ob-row')],b=rows[rows.length-1].getBoundingClientRect();return [r.left+r.width/2,Math.min(r.bottom-8,b.bottom+40)]})()`);
+  await a.raton('mouseMoved',h[0],h[1]);await a.raton('mousePressed',h[0],h[1],1,'left');await a.raton('mouseReleased',h[0],h[1],0,'left');await sleep(300);
+  const r3=await a.ev(`(async()=>{const o={foco:document.activeElement.id};const dt=new DataTransfer();dt.setData('text/plain','Pegado desde fuera');document.activeElement.dispatchEvent(new ClipboardEvent('paste',{clipboardData:dt,bubbles:true,cancelable:true}));await new Promise(r=>setTimeout(r,600));
+    const n=VTAPI.state().notes.find(x=>x.body==='Pegado desde fuera');o.titulo=n?n.title:null;o.resaltada=!!(n&&document.querySelector('#ob-list [data-note="'+n.id+'"].ob-new'));return o})()`);
+  ok(r3.foco==='ob-list'&&r3.titulo===''&&r3.resaltada,'notas: un clic en un hueco y Ctrl+V con texto crea una nota sin nombre, resaltada',r3);
+  await a.tecla('F2');await sleep(300);const f2=await a.ev(`!!document.getElementById('ob-edit')`);await a.ev(`(()=>{const e=document.getElementById('ob-edit');if(e){e.value='Pegada';e.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}))}})()`);await sleep(400);
+  await a.ev(`document.querySelector('#ob-list [data-note="k7"]').focus()`);const s=await centro('#ob-list [data-note="k7"]');await a.raton('mouseMoved',s[0],s[1]);await a.raton('mousePressed',s[0],s[1],1,'left');await a.raton('mouseReleased',s[0],s[1],0,'left');await sleep(600);
+  await a.ev(`(()=>{if(!document.getElementById('noteview').hidden)document.getElementById('ne-close').click();const r=document.querySelector('#ob-list [data-note="k7"]');if(r)r.focus()})()`);await sleep(300);
+  await a.tecla('Delete');await sleep(500);const r4=await a.ev(`(async()=>{const b=[...document.querySelectorAll('.sheet-back:not([hidden]) button')].find(x=>/Eliminar/.test(x.textContent));if(b){b.click();await new Promise(r=>setTimeout(r,400))}return {renombrada:VTAPI.state().notes.some(x=>x.title==='Pegada'),borrada:!VTAPI.state().notes.some(x=>x.id==='k7')}})()`);
+  await lista();await a.tecla('z',2);await sleep(500);r4.vuelve=await a.ev(`VTAPI.state().notes.some(x=>x.id==='k7')`);r4.f2=f2;
+  ok(r4.f2&&r4.renombrada&&r4.borrada&&r4.vuelve,'notas: F2 renombra, Supr borra y Ctrl+Z lo devuelve',r4);
+  /* Soltar dos archivos desde fuera estando en la Agenda */
+  await a.ev(`(async()=>{document.querySelector('.nav [data-view=cal]').click();await new Promise(r=>setTimeout(r,500))})()`);
+  const r5=await a.ev(`(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms)),dt=new DataTransfer();dt.items.add(new File(['# Hola'],'Soltada.md',{type:'text/markdown'}));dt.items.add(new File([new Uint8Array([37,80,68,70])],'informe.pdf',{type:'application/pdf'}));
+    document.body.dispatchEvent(new DragEvent('dragover',{dataTransfer:dt,bubbles:true,cancelable:true,clientX:300,clientY:300}));await w(800);const o={vista:document.querySelector('.nav [aria-current=page]').dataset.view};
+    const b=document.querySelector('#ob-list [data-folder="Beta"]').getBoundingClientRect(),x=b.left+b.width/2,y=b.top+b.height/2,el=document.elementFromPoint(x,y);el.dispatchEvent(new DragEvent('dragover',{dataTransfer:dt,bubbles:true,cancelable:true,clientX:x,clientY:y}));await w(80);o.marcada=!!document.querySelector('#ob-list .drop');
+    el.dispatchEvent(new DragEvent('drop',{dataTransfer:dt,bubbles:true,cancelable:true,clientX:x,clientY:y}));await w(1000);const S=VTAPI.state(),n=S.notes.find(z=>z.title==='Soltada'),p=S.atts.find(z=>z.name==='informe.pdf');o.nota=n&&n.folder+'|'+n.body;o.pdf=p&&p.folder+'|'+p.kind;o.resaltados=document.querySelectorAll('#ob-list .ob-new').length;return o})()`);
+  ok(r5.vista==='notes'&&r5.marcada&&r5.nota==='Beta|# Hola'&&r5.pdf==='Beta|file'&&r5.resaltados>=2,'notas: soltar archivos desde fuera lleva a Notas y los mete en la carpeta de debajo, resaltados',r5);
+  await lista();await a.tecla('z',2);await sleep(500);const r6=await a.ev(`({nota:VTAPI.state().notes.some(z=>z.title==='Soltada'),pdf:VTAPI.state().atts.some(z=>z.name==='informe.pdf')})`);
+  ok(!r6.nota&&!r6.pdf,'notas: Ctrl+Z quita de una vez todo lo soltado',r6);
+  /* Fuera de la ventana: el archivo temporal que se le da al sistema */
+  const tmp=path.join(os.tmpdir(),'temvra-arrastre','Seis.md');try{fs.unlinkSync(tmp)}catch(e){}
+  const q=await centro('#ob-list [data-note="k6"]');await a.raton('mouseMoved',q[0],q[1]);await a.raton('mousePressed',q[0],q[1],1,'left');for(let i=1;i<=10;i++){await a.raton('mouseMoved',q[0]-q[0]*i/9-3,q[1],1,'left');await sleep(40)}await a.raton('mouseReleased',0,q[1],0,'left');await sleep(800);
+  const sale=fs.existsSync(tmp)?fs.readFileSync(tmp,'utf8'):null;try{fs.unlinkSync(tmp)}catch(e){}
+  ok(sale==='Texto de Seis','notas: una nota arrastrada fuera de la ventana sale como archivo .md',{sale});
+  /* Tres columnas: en la columna central también se ordena arrastrando, también lo que no está en ninguna carpeta */
+  await a.send('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false});await sleep(500);
+  await a.ev(`(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms));VTAPI.state().obFolder='';document.querySelector('.nav [data-view=cal]').click();await w(400);document.querySelector('.nav [data-view=notes]').click();await w(800)})()`);
+  const col=()=>a.ev(`[...document.querySelectorAll('#vn-list .vl-row[data-note]')].map(r=>(VTAPI.state().notes.find(n=>n.id===r.dataset.note)||{}).title).join(' ')`);
+  const c0=await col(),s6=await centro('#vn-list [data-note="k6"]'),s7=await centro('#vn-list [data-note="k7"]');await arrastra([s7[0],s7[1]],[s6[0],s6[1]-s6[2]*.4]);
+  const r7={tres:await a.ev(`document.body.classList.contains('notes3')`),antes:c0,despues:await col(),modo:await a.ev(`VTAPI.state().obFolderSort['']`)};
+  ok(r7.tres&&/Seis.*Siete/.test(r7.antes)&&/Siete.*Seis/.test(r7.despues)&&r7.modo==='custom','notas: en la columna central también se ordena arrastrando',r7)}
+
+/* PC: Ctrl+rueda y Ctrl + / − / 0 cambian el zoom de la ventana */
+async function zoomPC(a){const z=()=>a.ev(`Math.round(devicePixelRatio*100)`);await a.ev(`document.getElementById('ob-list').focus()`);
+  const r={ini:await z()};await a.tecla('+',2);await sleep(400);r.mas=await z();await a.tecla('-',2);await sleep(300);await a.tecla('-',2);await sleep(400);r.menos=await z();await a.rueda(600,400,-120,2);await sleep(400);r.rueda=await z();await a.tecla('0',2);await sleep(400);r.cero=await z();r.aviso=await a.ev(`document.getElementById('toast').textContent`);
+  ok(r.ini===100&&r.mas===110&&r.menos===90&&r.rueda===100&&r.cero===100&&r.aviso==='Zoom 100 %','PC: zoom con Ctrl + / − / 0 y con Ctrl+rueda',r)}
+
+/* Registros: repetir las filas ciertos días de la semana o del mes; se rellenan también los días pasados sin abrir la app */
+async function repeticion(a){
+  const r=await a.ev(`(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms)),S=VTAPI.state();S.regs.push({id:'rqa',name:'Estudio',type:'estudio',tag:'',color:'#8b6cf6',icon:'📚',cols:['Tema','Minutos'],rows:[]});S.regLast='rqa';
+    document.querySelector('.nav [data-view=cal]').click();await w(400);document.querySelector('.nav [data-view=reg]').click();await w(800);if(!document.querySelector('[data-reprow]')){const p=document.querySelector('[data-pick="rqa"],[data-rcard="rqa"]');if(p)p.click();await w(600)}
+    const b=document.querySelector('[data-reprow]'),o={boton:b&&b.textContent.trim()};b.click();await w(600);const h=document.getElementById('ob-sheet');h.querySelector('[data-rmode="w"]').click();await w(200);
+    for(const d of ['0','1','2','3','4','5','6']){const x=h.querySelector('[data-rw="'+d+'"]'),on=x.getAttribute('aria-pressed')==='true';if(on!==['1','3','5'].includes(d)){x.click();await w(80)}}
+    const R=h.querySelector('.sheet').getBoundingClientRect();o.fuera=[...h.querySelectorAll('[data-rw]')].filter(x=>{const q=x.getBoundingClientRect();return q.right>Math.min(R.right,innerWidth)+.5||q.left<R.left-.5}).length;
+    h.querySelector('#rep-ok').click();await w(600);const g=S.regs.find(x=>x.id==='rqa');o.rep=JSON.stringify(g.rep.w);o.boton2=document.querySelector('[data-reprow]').textContent.trim();
+    const p=v=>String(v).padStart(2,'0'),k=d=>d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()),d0=new Date();d0.setDate(d0.getDate()-14);g.rep={w:[1,3,5],since:k(d0)};g.rows=[];
+    document.querySelector('.nav [data-view=cal]').click();await w(300);document.querySelector('.nav [data-view=reg]').click();await w(600);o.dias=[...new Set(g.rows.map(x=>new Date(x.d+'T12:00').getDay()))].sort().join();o.filas=g.rows.length;
+    g.rep={m:[31],since:'2026-11-01',last:'2026-11-29'};g.rows=[];document.querySelector('.nav [data-view=cal]').click();await w(300);document.querySelector('.nav [data-view=reg]').click();await w(500);o.nov30=g.rows.some(x=>x.d==='2026-11-30')||k(new Date())<'2026-11-30';
+    S.regs=S.regs.filter(x=>x.id!=='rqa');return o})()`);
+  ok(r.boton==='Cada día'&&!r.fuera&&r.rep==='[1,3,5]'&&r.boton2==='lun, mié, vie'&&r.dias==='1,3,5'&&r.filas>=6&&r.nov30,'registros: repetir filas los días elegidos, también los pasados sin abrir la app',r)}
+
+/* Móvil: al tocar en mitad de una nota larga y escribir, la nota no salta y el cursor queda por encima de la barra de formato */
+async function salto(a){
+  const largo=Array.from({length:45},(_,i)=>'Línea '+(i+1)+' de una nota de prueba bastante larga para que haga falta desplazarse.').join('\\n');
+  await a.ev(`(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms)),S=VTAPI.state();S.ob.bottomUp=true;S.notes.unshift({id:'nqaJ',title:'Salto',folder:'',pinned:false,created:Date.now(),updated:Date.now(),body:'${largo}'});
+    document.querySelector('.nav [data-view=cal]').click();await w(400);document.querySelector('.nav [data-view=notes]').click();await w(800);document.querySelector('[data-note="nqaJ"]').click();await w(900);if(document.getElementById('ne-edit').hidden){document.getElementById('ne-mode').click();await w(600)}
+    document.getElementById('ne-text').blur();await w(300);document.querySelector('#noteview .ne-body').scrollTop=700;await w(300)})()`);
+  const mide=`(()=>{const ta=document.getElementById('ne-text'),b=document.querySelector('#noteview .ne-body'),tl=document.getElementById('ne-tools').getBoundingClientRect(),m=document.createElement('div'),cs=getComputedStyle(ta);['fontFamily','fontSize','fontWeight','lineHeight','letterSpacing','paddingTop','paddingLeft','paddingRight','boxSizing','wordSpacing','tabSize'].forEach(k=>m.style[k]=cs[k]);
+    m.style.cssText+=';position:absolute;visibility:hidden;white-space:pre-wrap;overflow-wrap:break-word;width:'+ta.clientWidth+'px;left:0;top:0';m.textContent=ta.value.slice(0,ta.selectionStart);const s=document.createElement('span');s.textContent='|';m.appendChild(s);document.body.appendChild(m);const y=ta.getBoundingClientRect().top+s.offsetTop;m.remove();return {scroll:Math.round(b.scrollTop),cursor:Math.round(y),barra:Math.round(tl.top),pos:ta.selectionStart,largo:ta.value.length}})()`;
+  await a.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:200,y:430,id:1}]});await sleep(60);await a.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await sleep(120);
+  await a.send('Emulation.setDeviceMetricsOverride',{width:412,height:520,deviceScaleFactor:2,mobile:true});await sleep(800);const t0=await a.ev(mide);
+  await a.send('Input.insertText',{text:'a'});await sleep(300);await a.send('Input.insertText',{text:'b'});await sleep(300);const t1=await a.ev(mide);
+  await a.send('Emulation.setDeviceMetricsOverride',{width:412,height:915,deviceScaleFactor:2,mobile:true});
+  await a.ev(`(async()=>{const S=VTAPI.state();document.getElementById('ne-text').blur();document.getElementById('ne-close').click();S.notes=S.notes.filter(x=>x.id!=='nqaJ');S.ob.bottomUp=false;await new Promise(r=>setTimeout(r,300))})()`);
+  ok(t0.pos<t0.largo-400&&t0.cursor<t0.barra&&Math.abs(t1.scroll-t0.scroll)<80&&t1.cursor<t1.barra,'móvil: al escribir en mitad de una nota larga no salta y el cursor queda sobre la barra',{t0,t1})}
+
+/* Buscar en la nota: la lupa y Ctrl+F, sin distinguir mayúsculas ni acentos; Intro y Mayús+Intro recorren; Esc cierra sin salir de la nota;
+   editando, los resultados se marcan en la capa de detrás y al cerrar queda elegida la palabra; sin nota abierta, Ctrl+F busca en todas */
+async function buscarNota(a){
+  const body='El árbol del patio es un Arbol enorme.\\n\\nOtros ARBOLES: **arbolito** y olivo.\\n'+Array.from({length:30},(_,i)=>'Línea '+(i+1)).join('\\n')+'\\nAl final, otro árbol.';
+  await a.ev(`(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms)),S=VTAPI.state();S.notes.unshift({id:'nbq',title:'Plantas',folder:'',pinned:false,created:Date.now(),updated:Date.now(),body:'${body}'});S.obFolder='';
+    document.querySelector('.nav [data-view=cal]').click();await w(400);document.querySelector('.nav [data-view=notes]').click();await w(800);document.querySelector('[data-note="nbq"]').click();await w(800);if(!document.getElementById('ne-edit').hidden){document.getElementById('ne-mode').click();await w(400)}})()`);
+  const r1=await a.ev(`(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms));document.getElementById('ne-find-b').click();await w(150);const inp=document.getElementById('nf-in'),o={foco:document.activeElement===inp};inp.value='arbol';inp.dispatchEvent(new Event('input'));await w(350);
+    o.cuenta=document.getElementById('nf-n').textContent;o.marcas=document.querySelectorAll('#ne-read mark.nf').length;inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));await w(150);o.intro=document.getElementById('nf-n').textContent;
+    inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',shiftKey:true,bubbles:true}));await w(150);o.mayus=document.getElementById('nf-n').textContent;return o})()`);
+  await a.tecla('Escape');await sleep(300);r1.esc=await a.ev(`!document.getElementById('noteview').hidden&&document.getElementById('ne-find').hidden&&!document.querySelector('#ne-read mark.nf')`);
+  ok(r1.foco&&r1.cuenta==='1/5'&&r1.marcas===5&&r1.intro==='2/5'&&r1.mayus==='1/5'&&r1.esc,'notas: la lupa busca en la nota sin distinguir mayúsculas ni acentos y Esc cierra sin salir',r1);
+  await a.ev(`(async()=>{document.getElementById('ne-mode').click();await new Promise(r=>setTimeout(r,400));const ta=document.getElementById('ne-text'),i=ta.value.indexOf('olivo');ta.focus();ta.setSelectionRange(i,i+5)})()`);
+  await a.tecla('f',2);await sleep(400);
+  const r2=await a.ev(`(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms)),inp=document.getElementById('nf-in'),o={texto:inp.value,cuenta:document.getElementById('nf-n').textContent};inp.value='árbol';inp.dispatchEvent(new Event('input'));await w(350);
+    const f=document.getElementById('ne-fhl'),ta=document.getElementById('ne-text'),cf=getComputedStyle(f),ct=getComputedStyle(ta);o.marcas=f.querySelectorAll('mark').length;o.letra=cf.fontFamily===ct.fontFamily&&cf.fontSize===ct.fontSize&&cf.lineHeight===ct.lineHeight;
+    inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));await w(150);return o})()`);
+  await a.tecla('Escape');await sleep(300);r2.cierre=await a.ev(`(()=>{const ta=document.getElementById('ne-text');return document.activeElement===ta&&ta.value.slice(ta.selectionStart,ta.selectionEnd)})()`);
+  ok(r2.texto==='olivo'&&r2.cuenta==='1/1'&&r2.marcas===5&&r2.letra&&r2.cierre==='Arbol','notas: editando, Ctrl+F parte de lo elegido, marca los resultados y al cerrar deja elegida la palabra',r2);
+  await a.ev(`(async()=>{const S=VTAPI.state();document.getElementById('ne-text').blur();document.getElementById('ne-close').click();S.notes=S.notes.filter(x=>x.id!=='nbq');await new Promise(r=>setTimeout(r,400))})()`);
+  await a.tecla('f',2);await sleep(500);const r3=await a.ev(`VTAPI.state().obPanel`);await a.ev(`(()=>{const S=VTAPI.state();S.obPanel='files'})()`);
+  ok(r3==='search','notas: sin nota abierta, Ctrl+F abre la búsqueda en todas las notas',{panel:r3})}
+
 /* Sin categorías también se puede crear un bloque: se toca un hueco de la línea de tiempo y se elige Bloque.
    El hueco se busca en pantalla: la vista Día se coloca en la hora actual y un punto fijo, por la noche, cae en la cabecera del día siguiente */
 async function bloque(a){
@@ -192,12 +312,12 @@ try{
   const pc=await abre(9701,[1440,900]);
   const r=await vacio(pc,true);ok(r.vistas===7&&r.panel,'PC: todas las vistas de la Agenda y panel de días junto al Mes',r);
   await sinVisita(pc);await centrar(pc);await aro(pc,true);await guardado(pc);await token(pc);
-  await encabezado(pc);await burbujaNota(pc);await fechaHoy(pc);await letraWidgets(pc);await avisoTarde(pc);await sincroniza(pc);
+  await encabezado(pc);await burbujaNota(pc);await fechaHoy(pc);await letraWidgets(pc);await avisoTarde(pc);await sincroniza(pc);await notasPC(pc);await zoomPC(pc);await buscarNota(pc);
   ok(!pc.errores.length,'PC: sin errores de JavaScript',pc.errores);pc.cierra();
   console.log('— Móvil 412×915');
   const mv=await abre(9702,[412,915],true);
   await vacio(mv,false);ok(!await mv.ev(`document.body.classList.contains('deskcal')`),'móvil: sin panel de días');
-  await sinVisita(mv);await centrar(mv);await aro(mv,false);await bloque(mv);await emojis(mv);await migracion(mv);
+  await sinVisita(mv);await centrar(mv);await aro(mv,false);await bloque(mv);await emojis(mv);await repeticion(mv);await salto(mv);await migracion(mv);
   ok(!mv.errores.length,'móvil: sin errores de JavaScript',mv.errores);mv.cierra();
 }catch(e){fallos++;console.error('✗ Prueba interrumpida:',e.message)}
 finally{abiertas.forEach(a=>a.cierra());await sleep(400);if(!yaHabia)try{fs.unlinkSync(enlace)}catch(e){}for(const d of temporales)try{fs.rmSync(d,{recursive:true,force:true})}catch(e){}}

@@ -1,5 +1,5 @@
 // Temvra para escritorio: abre el mismo www/ que Android en una ventana propia.
-const {app,BrowserWindow,Menu,Tray,ipcMain,net,protocol,safeStorage,shell}=require('electron');
+const {app,BrowserWindow,Menu,Tray,ipcMain,nativeImage,net,protocol,safeStorage,shell}=require('electron');
 const fs=require('node:fs'),path=require('node:path'),{pathToFileURL}=require('node:url'),{execFile,execFileSync}=require('node:child_process');
 const www=path.join(__dirname,'www'),ORIGIN='app://temvra';
 // Origen propio y fijo: localStorage (los datos) no depende de dónde esté instalada la app
@@ -91,6 +91,17 @@ ipcMain.on('attention',(e,kind)=>{
 });
 // Actualizaciones: la web encuentra la versión nueva en GitHub y aquí se descarga e instala
 const fromApp=e=>e.senderFrame&&e.senderFrame.url.startsWith(ORIGIN+'/');
+/* Zoom con Ctrl+rueda y Ctrl + / − / 0, como en un navegador: sin menú de la aplicación no hay atajos de zoom. Se recuerda entre sesiones */
+const ZOOMS=[.5,.67,.75,.8,.9,1,1.1,1.25,1.5,1.75,2],ZF=()=>path.join(app.getPath('userData'),'zoom.json');let zoomF=null;
+function zoomGet(){if(zoomF==null){zoomF=1;try{const z=+JSON.parse(fs.readFileSync(ZF(),'utf8')).f;if(ZOOMS.includes(z))zoomF=z}catch(e){}}return zoomF}
+function zoom(wc,d){const i=ZOOMS.indexOf(zoomGet());zoomF=d===0?1:ZOOMS[Math.max(0,Math.min(ZOOMS.length-1,(i<0?5:i)+d))];wc.setZoomFactor(zoomF);
+  try{fs.writeFileSync(ZF(),JSON.stringify({f:zoomF}))}catch(e){}wc.send('vt-zoom',Math.round(zoomF*100))}
+ipcMain.on('vt-zoom-set',(e,d)=>{if(fromApp(e))zoom(e.sender,Math.sign(+d||0))});
+/* Arrastrar una nota o un adjunto fuera de la ventana: se escribe en una carpeta temporal y el sistema lo arrastra como archivo */
+const DRAGD=()=>path.join(app.getPath('temp'),'temvra-arrastre');let dragIco=null;
+ipcMain.on('drag-out',(e,name,data)=>{if(!fromApp(e))return;try{fs.mkdirSync(DRAGD(),{recursive:true});
+  const safe=String(name||'').replace(/[\\/:*?"<>|\u0000-\u001f]/g,'-').replace(/^[.\s]+/,'').slice(0,150)||'nota.md',f=path.join(DRAGD(),safe);
+  fs.writeFileSync(f,Buffer.from(data||[]));if(!dragIco)dragIco=nativeImage.createFromPath(ICON).resize({width:48,height:48});e.sender.startDrag({file:f,icon:dragIco})}catch(err){}});
 ipcMain.on('app-version',e=>{e.returnValue=app.getVersion()});
 // Secretos (el token de GitHub), cifrados con el llavero del sistema. Sin un llavero de verdad, ok() dice que no y la web los guarda como antes
 const SECF=()=>path.join(app.getPath('userData'),'secretos.json'),secAll=()=>{try{return JSON.parse(fs.readFileSync(SECF(),'utf8'))}catch(e){return {}}};
@@ -184,6 +195,11 @@ function open(hidden){
   wc.on('context-menu',(_,p)=>{
     const t=p.isEditable?[{role:'cut',label:'Cortar'},{role:'copy',label:'Copiar'},{role:'paste',label:'Pegar'},{type:'separator'},{role:'selectAll',label:'Seleccionar todo'}]:p.selectionText?[{role:'copy',label:'Copiar'}]:[];
     if(t.length)Menu.buildFromTemplate(t).popup({window:win})});
+  /* Ctrl+rueda llega aquí solo si la página no lo usa (la línea de tiempo, el día y el lienzo tienen su propio zoom) */
+  wc.on('zoom-changed',(e,dir)=>zoom(wc,dir==='in'?1:-1));
+  wc.on('before-input-event',(e,i)=>{if(i.type!=='keyDown'||!(i.control||i.meta)||i.alt)return;const k=i.key;
+    if(k==='+'||k==='='||i.code==='NumpadAdd'){e.preventDefault();zoom(wc,1)}else if(k==='-'||i.code==='NumpadSubtract'){e.preventDefault();zoom(wc,-1)}else if((k==='0'&&!i.shift)||i.code==='Numpad0'){e.preventDefault();zoom(wc,0)}});
+  wc.on('did-finish-load',()=>{if(zoomGet()!==1)wc.setZoomFactor(zoomGet())});
   wc.on('did-finish-load',()=>{const l=pendingFiles,k=pendingLinks;pendingFiles=[];pendingLinks=[];if(l.length||k.length)setTimeout(()=>{sendFiles(l);sendLinks(k)},1500)});
   win.loadURL(ORIGIN+'/index.html');
 }
@@ -194,6 +210,8 @@ else{
   app.on('before-quit',()=>{quitting=true});
   app.whenReady().then(()=>{
     Menu.setApplicationMenu(null);
+    /* Lo que quedó de arrastrar archivos fuera hace más de un día */
+    try{for(const x of fs.readdirSync(DRAGD())){const p=path.join(DRAGD(),x);if(Date.now()-fs.statSync(p).mtimeMs>864e5)fs.unlinkSync(p)}}catch(e){}
     protocol.handle('app',req=>{
       const f=path.normalize(path.join(www,decodeURIComponent(new URL(req.url).pathname)));
       if(f!==www&&!f.startsWith(www+path.sep))return new Response('',{status:403});

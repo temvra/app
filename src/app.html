@@ -1153,6 +1153,36 @@ body.desk .cal-vseg button[aria-pressed="true"]{font-weight:650}
 .wkdays{display:flex;gap:6px;flex-wrap:wrap}
 .wkdays button{width:40px;height:40px;border-radius:50%;background:var(--surface-3);color:var(--fg);font-weight:600}
 .wkdays button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+/* Buscar en la nota: barra bajo la cabecera y resultados marcados con el color de acento (el amarillo ya es el del resaltado ==así==) */
+.ne-find{display:flex;align-items:center;gap:2px;margin:4px 12px 2px;padding:3px 3px 3px 12px;background:var(--surface-2);border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,.12)}
+.ne-find[hidden]{display:none}
+.ne-find .nf-ic{display:grid;color:var(--muted);margin-right:4px}
+.ne-find input{flex:1;min-width:0;height:40px;border:0;background:transparent;color:var(--fg);font:16px var(--font);outline:none;padding:0}
+.ne-find input::-webkit-search-cancel-button{display:none}
+.nf-n{font-size:13px;color:var(--muted);white-space:nowrap;padding:0 6px;font-variant-numeric:tabular-nums}
+.ne-find.none .nf-n{color:#e5484d}
+.ne-find button{width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;color:var(--fg)}
+.ne-find button:disabled{opacity:.3}
+body.desknotes .ne-find{max-width:760px;width:calc(100% - 40px);margin:6px auto 2px}
+.ne-fhl{color:transparent!important;-webkit-text-fill-color:transparent}
+.ne-fhl mark{background:color-mix(in srgb,var(--accent) 30%,transparent);color:transparent;border-radius:3px}
+.ne-fhl mark.on{background:color-mix(in srgb,var(--accent) 65%,transparent);box-shadow:0 0 0 2px var(--accent)}
+#ne-read mark.nf{background:color-mix(in srgb,var(--accent) 30%,transparent);color:inherit;border-radius:3px}
+#ne-read mark.nf.on{background:color-mix(in srgb,var(--accent) 65%,transparent);box-shadow:0 0 0 2px var(--accent)}
+.ne-find input,.ne-find input:focus{box-shadow:none!important;border:0!important;outline:none!important;border-radius:0}
+/* Notas: lo recién pegado o soltado sale resaltado; con el teclado se ve la fila elegida; al soltar desde fuera se marca la lista */
+#ob-list .ob-row.ob-new,#vn-list .vl-row.ob-new{background:color-mix(in srgb,var(--accent) 24%,transparent)!important;box-shadow:inset 3px 0 0 var(--accent)}
+#ob-list .ob-row:focus-visible,#vn-list .vl-row:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+#ob-list:focus,#vn-list:focus{outline:none}
+#ob-list:focus-within,#vn-list .vl-rows:focus-within{box-shadow:none}
+body.ob-dropping #ob-list,body.ob-dropping #vn-list .vl-rows{outline:2px dashed color-mix(in srgb,var(--accent) 70%,transparent);outline-offset:-4px;border-radius:14px}
+/* Repetir filas de un registro: días de la semana o del mes */
+.rep-pick{padding:14px}
+.rep-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;justify-items:center}
+.rep-days button{width:100%;max-width:42px;aspect-ratio:1;border-radius:50%;background:var(--surface-3);color:var(--fg);font-weight:600;font-size:15px;padding:0}
+.rep-days button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.rep-note{display:block;margin-top:12px;color:var(--muted);font-size:13px;line-height:1.4}
+.rep-btn{display:inline-flex;align-items:center;gap:6px}
 /* Hoja de evento ampliada */
 .ev-kinds{display:flex!important;overflow-x:auto;scrollbar-width:none;gap:6px;grid-template-columns:none!important}
 .ev-kinds::-webkit-scrollbar{display:none}
@@ -1477,9 +1507,13 @@ body:not(.desk) .ob-note .vn-back{flex:1 1 auto;min-width:0;max-width:none;backg
 body:not(.desk) .ob-note .vn-back span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 body:not(.desk) .ob-note .ob-pillbar{background:transparent;padding:0;gap:0;flex:none}
 body:not(.desk) .ob-note .ob-pillbar button{width:42px;height:44px;border-radius:14px}
+/* Con la lupa son seis botones: en móviles estrechos se estrechan un poco para que quepa el nombre de la carpeta */
+@media (max-width:400px){body:not(.desk) .ob-note .ob-pillbar button{width:38px}}
 body:not(.desk) .ob-note .ob-pillbar button svg{width:22px;height:22px}
 body:not(.desk) .ob-note .ob-pillbar button.linked{background:var(--container);color:var(--on-container)}
 body:not(.desk) .ob-note .ne-tools{background:var(--surface-2);border-radius:22px 22px 0 0;box-shadow:0 -2px 10px rgba(0,0,0,.12)}
+/* La barra de formato flota sobre el final de la nota: al escribir, el navegador deja el cursor por encima de ella y no debajo */
+body:not(.desk) .ob-note .ne-body{scroll-padding-bottom:calc(var(--sab,env(safe-area-inset-bottom,0px)) + 84px)}
 /* Menú de la nota en recuadros agrupados */
 #ob-sheet.grp .sheet{padding-top:6px}
 #ob-sheet.grp .obg{border-radius:20px;margin-top:10px}
@@ -3345,15 +3379,17 @@ body:not(.desk) #v-blocks.bkwk .bk-time,body:not(.desk) #v-blocks.bkwk .bk-em{di
       <button id="ne-mode" aria-label="Lectura"></button>
 <button id="ne-clip" aria-label="Adjuntar archivo" title="Adjuntar archivo"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5l-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l8.6-8.6a3.7 3.7 0 0 1 5.2 5.2l-8.6 8.6a1.8 1.8 0 0 1-2.6-2.6l7.9-7.9"/></svg></button>
       <button id="ne-share" aria-label="Compartir" title="Compartir"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M16 6l-4-4-4 4M12 2v13"/></svg></button>
+      <button id="ne-find-b" aria-label="Buscar en la nota" title="Buscar en la nota (Ctrl+F)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg></button>
       <button id="ne-more" aria-label="Más opciones"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>
     </div>
   </div>
+  <div class="ne-find" id="ne-find" hidden role="search"><span class="nf-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg></span><input id="nf-in" type="search" placeholder="Buscar en la nota" autocomplete="off" enterkeyhint="search" aria-label="Buscar en la nota"><span class="nf-n" id="nf-n" aria-live="polite"></span><button id="nf-prev" aria-label="Anterior" title="Anterior (Mayús+Intro)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg></button><button id="nf-next" aria-label="Siguiente" title="Siguiente (Intro)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button><button id="nf-x" aria-label="Cerrar la búsqueda" title="Cerrar (Esc)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
   <div class="scroll ne-body">
     <input id="ne-title" class="ob-title" maxlength="80" placeholder="Sin título" aria-label="Título de la nota">
     <div class="ne-meta" id="ne-meta"></div>
     <div class="ne-layer" id="ne-layer"></div>
     <input type="file" id="lay-file" accept="image/*" hidden>
-    <div class="ne-edit" id="ne-edit"><div class="ne-hl" id="ne-hl" aria-hidden="true"></div><textarea id="ne-text" spellcheck="true" placeholder="Empieza a escribir… Usa [[ para enlazar otra nota y # para etiquetas."></textarea></div>
+    <div class="ne-edit" id="ne-edit"><div class="ne-hl ne-fhl" id="ne-fhl" aria-hidden="true"></div><div class="ne-hl" id="ne-hl" aria-hidden="true"></div><textarea id="ne-text" spellcheck="true" placeholder="Empieza a escribir… Usa [[ para enlazar otra nota y # para etiquetas."></textarea></div>
     <div class="md" id="ne-read" hidden></div>
     <div class="ne-sug" id="ne-sug" hidden></div>
     <div class="ne-links" id="ne-links"></div>
@@ -3779,7 +3815,7 @@ if(!S.uiV){S.uiV=2;if(S.mode==='auto')S.mode='dark'}
 S.bg=Object.assign({},DEF.bg,S.bg||{});S.tts=Object.assign({},DEF.tts,S.tts||{});
 let bgImg=LS.get('bgimg',null),ownAudio=LS.get('own',null),ownName=LS.get('ownname','');
 let wT=0;
-const save=()=>{if(S.events&&S.agendas)S.events.forEach(e=>{if(!e.ag)e.ag=agNew()});calDirty=true;if(window.apDirty)window.apDirty();if(window.ghDirty)window.ghDirty();clearTimeout(wT);wT=setTimeout(()=>{if(typeof pushWidgets==='function')pushWidgets()},1500);return LS.set('state',S)};
+const save=()=>{if(S.events&&S.agendas)S.events.forEach(e=>{if(!e.ag)e.ag=agNew()});calDirty=true;if(window.apDirty)window.apDirty();if(window.ghDirty)window.ghDirty();if(window.fsDirty)window.fsDirty();clearTimeout(wT);wT=setTimeout(()=>{if(typeof pushWidgets==='function')pushWidgets()},1500);return LS.set('state',S)};
 
 /* ================= IDIOMA ================= */
 const LANGS=[['es-ES','Español (España)'],['es-MX','Español (México)'],['ca-ES','Català'],['en-US','English (US)'],['en-GB','English (UK)'],['pt-BR','Português (Brasil)'],['pt-PT','Português (Portugal)'],['fr-FR','Français'],['de-DE','Deutsch'],['it-IT','Italiano'],['ja-JP','日本語'],['zh-CN','中文 (简体)'],['ko-KR','한국어']];
@@ -3793,6 +3829,8 @@ DICT.push(["Semana anterior","Previous week","Semana anterior","Semaine précéd
 DICT.push(["Carpeta del teléfono", "Phone folder", "Pasta do telemóvel", "Dossier du téléphone", "Ordner auf dem Telefon", "Cartella del telefono", "Carpeta del telèfon", "スマホのフォルダ", "手机文件夹", "휴대폰 폴더"],["Carpeta del equipo", "Computer folder", "Pasta do computador", "Dossier de l'ordinateur", "Ordner auf dem Computer", "Cartella del computer", "Carpeta de l'ordinador", "パソコンのフォルダ", "电脑文件夹", "컴퓨터 폴더"],["En este equipo", "On this computer", "Neste computador", "Sur cet ordinateur", "Auf diesem Computer", "Su questo computer", "En aquest ordinador", "このパソコン", "在这台电脑上", "이 컴퓨터에"],["Equipo + GitHub", "Computer + GitHub", "Computador + GitHub", "Ordinateur + GitHub", "Computer + GitHub", "Computer + GitHub", "Ordinador + GitHub", "パソコン + GitHub", "电脑 + GitHub", "컴퓨터 + GitHub"],["Elegir carpeta…", "Choose folder…", "Escolher pasta…", "Choisir un dossier…", "Ordner wählen…", "Scegli cartella…", "Tria una carpeta…", "フォルダを選択…", "选择文件夹…", "폴더 선택…"],["Cambiar de carpeta", "Change folder", "Mudar de pasta", "Changer de dossier", "Ordner wechseln", "Cambia cartella", "Canvia de carpeta", "フォルダを変更", "更换文件夹", "폴더 변경"],["Sincronizar ahora", "Sync now", "Sincronizar agora", "Synchroniser maintenant", "Jetzt synchronisieren", "Sincronizza ora", "Sincronitza ara", "今すぐ同期", "立即同步", "지금 동기화"],["Dejar de usar la carpeta", "Stop using the folder", "Deixar de usar a pasta", "Ne plus utiliser le dossier", "Ordner nicht mehr verwenden", "Smetti di usare la cartella", "Deixa d'usar la carpeta", "フォルダの使用をやめる", "停止使用该文件夹", "폴더 사용 중지"],["Elige una carpeta", "Choose a folder", "Escolhe uma pasta", "Choisis un dossier", "Wähle einen Ordner", "Scegli una cartella", "Tria una carpeta", "フォルダを選んでください", "请选择文件夹", "폴더를 선택하세요"],["Guardar en una carpeta del teléfono", "Save to a phone folder", "Guardar numa pasta do telemóvel", "Enregistrer dans un dossier du téléphone", "In einem Ordner auf dem Telefon speichern", "Salva in una cartella del telefono", "Desa en una carpeta del telèfon", "スマホのフォルダに保存", "保存到手机文件夹", "휴대폰 폴더에 저장"],["Guardar en una carpeta del equipo", "Save to a computer folder", "Guardar numa pasta do computador", "Enregistrer dans un dossier de l'ordinateur", "In einem Ordner auf dem Computer speichern", "Salva in una cartella del computer", "Desa en una carpeta de l'ordinador", "パソコンのフォルダに保存", "保存到电脑文件夹", "컴퓨터 폴더에 저장"],["Guardar las notas como archivos .md que otras apps pueden abrir", "Save notes as .md files other apps can open", "Guardar as notas como ficheiros .md que outras apps podem abrir", "Enregistrer les notes en fichiers .md lisibles par d'autres apps", "Notizen als .md-Dateien speichern, die andere Apps öffnen können", "Salva le note come file .md apribili da altre app", "Desa les notes com a fitxers .md que altres apps poden obrir", "ほかのアプリで開ける .md ファイルとしてノートを保存", "将笔记保存为其他应用可打开的 .md 文件", "다른 앱에서 열 수 있는 .md 파일로 노트 저장"],["Los archivos se quedan en la carpeta y las notas en Temvra", "Files stay in the folder and notes stay in Temvra", "Os ficheiros ficam na pasta e as notas no Temvra", "Les fichiers restent dans le dossier et les notes dans Temvra", "Die Dateien bleiben im Ordner, die Notizen in Temvra", "I file restano nella cartella e le note in Temvra", "Els fitxers es queden a la carpeta i les notes a Temvra", "ファイルはフォルダに、ノートは Temvra に残ります", "文件保留在文件夹中，笔记保留在 Temvra 中", "파일은 폴더에, 노트는 Temvra에 남습니다"],["Carpeta (opcional)…", "Folder (optional)…", "Pasta (opcional)…", "Dossier (facultatif)…", "Ordner (optional)…", "Cartella (facoltativa)…", "Carpeta (opcional)…", "フォルダ（任意）…", "文件夹（可选）…", "폴더 (선택)…"],["Solo en la app de Android o del PC", "Only in the Android or PC app", "Só na app Android ou do PC", "Uniquement dans l'app Android ou PC", "Nur in der Android- oder PC-App", "Solo nell'app Android o PC", "Només a l'app d'Android o de PC", "Android または PC のアプリのみ", "仅限 Android 或电脑版应用", "Android 또는 PC 앱에서만"]);
 DICT.push(["Tamaño de letra de los widgets","Widget text size","Tamanho do texto dos widgets","Taille du texte des widgets","Textgröße der Widgets","Dimensione del testo dei widget","Mida de la lletra dels widgets","ウィジェットの文字サイズ","小组件文字大小","위젯 글자 크기"],["Muy pequeña","Very small","Muito pequena","Très petite","Sehr klein","Molto piccola","Molt petita","とても小さい","很小","매우 작게"],["Pequeña","Small","Pequena","Petite","Klein","Piccola","Petita","小さい","小","작게"],["Normal","Normal","Normal","Normale","Normal","Normale","Normal","標準","标准","보통"],["Grande","Large","Grande","Grande","Groß","Grande","Gran","大きい","大","크게"],["Muy grande","Very large","Muito grande","Très grande","Sehr groß","Molto grande","Molt gran","とても大きい","很大","매우 크게"],["Enorme","Huge","Enorme","Énorme","Riesig","Enorme","Enorme","特大","特大","아주 크게"],["Cambia el texto de todos los widgets de la pantalla de inicio. La hora y las cifras del temporizador ya se ajustan solas al tamaño del widget.","Changes the text of every home screen widget. The clock and the timer digits already adapt to the widget's size.","Altera o texto de todos os widgets do ecrã inicial. A hora e os dígitos do temporizador já se ajustam ao tamanho do widget.","Modifie le texte de tous les widgets de l'écran d'accueil. L'heure et les chiffres du minuteur s'adaptent déjà à la taille du widget.","Ändert den Text aller Widgets auf dem Startbildschirm. Die Uhrzeit und die Ziffern des Timers passen sich bereits der Widget-Größe an.","Cambia il testo di tutti i widget della schermata Home. L'ora e le cifre del timer si adattano già alle dimensioni del widget.","Canvia el text de tots els widgets de la pantalla d'inici. L'hora i les xifres del temporitzador ja s'ajusten soles a la mida del widget.","ホーム画面のすべてのウィジェットの文字を変更します。時刻とタイマーの数字はウィジェットの大きさに合わせて自動で調整されます。","更改主屏幕上所有小组件的文字。时间和计时器数字已会随小组件大小自动调整。","홈 화면의 모든 위젯 글자를 바꿉니다. 시각과 타이머 숫자는 위젯 크기에 맞춰 이미 자동으로 조정됩니다."],["Encabezado del día","Day header","Cabeçalho do dia","En-tête du jour","Tageskopf","Intestazione del giorno","Capçalera del dia","その日の見出し","当天标题","하루 머리글"],["Arriba, con la fecha y la agenda de ese día","At the top, with that day's date and agenda","No topo, com a data e a agenda desse dia","En haut, avec la date et l'agenda de ce jour","Oben, mit Datum und Agenda dieses Tages","In alto, con la data e l'agenda di quel giorno","A dalt, amb la data i l'agenda d'aquell dia","上部に、その日の日付と予定を表示","在顶部，带当天的日期和日程","맨 위에 그날의 날짜와 일정 표시"],["Fecha automática cada día","Automatic date every day","Data automática todos os dias","Date automatique chaque jour","Automatisches Datum jeden Tag","Data automatica ogni giorno","Data automàtica cada dia","毎日の日付を自動で追加","每天自动添加日期","매일 날짜 자동 추가"],["Añade la fecha de hoy al final cuando escribes en un día nuevo","Adds today's date at the end when you write on a new day","Acrescenta a data de hoje no fim quando escreves num dia novo","Ajoute la date du jour à la fin quand vous écrivez un nouveau jour","Fügt das heutige Datum am Ende hinzu, wenn du an einem neuen Tag schreibst","Aggiunge la data di oggi alla fine quando scrivi in un giorno nuovo","Afegeix la data d'avui al final quan escrius en un dia nou","新しい日に書くと、末尾に今日の日付を追加します","在新的一天书写时，在末尾添加今天的日期","새로운 날에 쓰면 끝에 오늘 날짜를 추가합니다"],["Activada: toca para quitarla","On: tap to turn it off","Ativada: toca para a desativar","Activée : touchez pour la désactiver","Aktiv: zum Ausschalten tippen","Attiva: tocca per disattivarla","Activada: toca per treure-la","オン：タップでオフ","已开启：点按关闭","켜짐: 탭하여 끄기"],["Fecha automática activada","Automatic date on","Data automática ativada","Date automatique activée","Automatisches Datum an","Data automatica attivata","Data automàtica activada","自動日付オン","自动日期已开启","자동 날짜 켜짐"],["Fecha automática desactivada","Automatic date off","Data automática desativada","Date automatique désactivée","Automatisches Datum aus","Data automatica disattivata","Data automàtica desactivada","自動日付オフ","自动日期已关闭","자동 날짜 꺼짐"],["Insertar la fecha de hoy como encabezado","Insert today's date as a heading","Inserir a data de hoje como cabeçalho","Insérer la date du jour comme titre","Heutiges Datum als Überschrift einfügen","Inserisci la data di oggi come intestazione","Insereix la data d'avui com a capçalera","今日の日付を見出しとして挿入","将今天的日期作为标题插入","오늘 날짜를 제목으로 삽입"],["Fecha automática cada día: activar","Automatic date every day: turn on","Data automática todos os dias: ativar","Date automatique chaque jour : activer","Automatisches Datum jeden Tag: einschalten","Data automatica ogni giorno: attiva","Data automàtica cada dia: activa","毎日の日付を自動で追加：オン","每天自动添加日期：开启","매일 날짜 자동 추가: 켜기"],["Fecha automática cada día: desactivar","Automatic date every day: turn off","Data automática todos os dias: desativar","Date automatique chaque jour : désactiver","Automatisches Datum jeden Tag: ausschalten","Data automatica ogni giorno: disattiva","Data automàtica cada dia: desactiva","毎日の日付を自動で追加：オフ","每天自动添加日期：关闭","매일 날짜 자동 추가: 끄기"],["Insertar encabezado del día","Insert day header","Inserir cabeçalho do dia","Insérer l'en-tête du jour","Tageskopf einfügen","Inserisci intestazione del giorno","Insereix la capçalera del dia","その日の見出しを挿入","插入当天标题","하루 머리글 삽입"],["Encabezado del día añadido","Day header added","Cabeçalho do dia adicionado","En-tête du jour ajouté","Tageskopf hinzugefügt","Intestazione del giorno aggiunta","Capçalera del dia afegida","その日の見出しを追加しました","已添加当天标题","하루 머리글을 추가했습니다"],["La nota ya tiene el encabezado de ese día","The note already has that day's header","A nota já tem o cabeçalho desse dia","La note a déjà l'en-tête de ce jour","Die Notiz hat den Kopf dieses Tages bereits","La nota ha già l'intestazione di quel giorno","La nota ja té la capçalera d'aquell dia","このノートにはその日の見出しがすでにあります","该笔记已有当天的标题","이 노트에는 이미 그날의 머리글이 있습니다"],["Actualizar avisos cada","Refresh reminders every","Atualizar avisos a cada","Actualiser les rappels toutes les","Hinweise aktualisieren alle","Aggiorna gli avvisi ogni","Actualitza els avisos cada","通知の更新間隔","提醒刷新间隔","알림 새로 고침 간격"],["Solo al empezar","Only at the start","Só ao começar","Seulement au début","Nur zu Beginn","Solo all'inizio","Només en començar","開始時のみ","仅在开始时","시작할 때만"]);
 DICT.push(["¿Fecha automática en esta nota?","Automatic date in this note?","Data automática nesta nota?","Date automatique dans cette note ?","Automatisches Datum in dieser Notiz?","Data automatica in questa nota?","Data automàtica en aquesta nota?","このノートに日付を自動で入れますか？","在这篇笔记中自动添加日期？","이 노트에 날짜를 자동으로 넣을까요?"],["Al escribir en ella en un día nuevo se añade la fecha de hoy al final","When you write in it on a new day, today's date is added at the end","Ao escrever nela num dia novo, a data de hoje é adicionada no fim","Quand vous y écrivez un nouveau jour, la date du jour est ajoutée à la fin","Wenn du an einem neuen Tag darin schreibst, wird das heutige Datum am Ende eingefügt","Quando ci scrivi in un giorno nuovo, la data di oggi viene aggiunta in fondo","Quan hi escrius en un dia nou, s'afegeix la data d'avui al final","新しい日に書くと、今日の日付が末尾に追加されます","在新的一天写入时，会在末尾添加今天的日期","새로운 날에 쓰면 오늘 날짜가 끝에 추가됩니다"],["Sí, cada día","Yes, every day","Sim, todos os dias","Oui, chaque jour","Ja, jeden Tag","Sì, ogni giorno","Sí, cada dia","はい、毎日","是，每天","예, 매일"],["No, solo cuando la ponga yo","No, only when I add it","Não, só quando eu a puser","Non, seulement quand je l'ajoute","Nein, nur wenn ich es einfüge","No, solo quando la metto io","No, només quan la posi jo","いいえ、自分で入れるときだけ","否，只在我自己添加时","아니요, 제가 넣을 때만"],["No volver a preguntar","Don't ask again","Não voltar a perguntar","Ne plus demander","Nicht mehr fragen","Non chiedere più","No tornis a preguntar","今後は確認しない","不再询问","다시 묻지 않기"],["Se activa en el menú de cada nota","Turn it on from each note's menu","Ativa-se no menu de cada nota","À activer dans le menu de chaque note","Im Menü jeder Notiz einschaltbar","Si attiva dal menu di ogni nota","S'activa al menú de cada nota","各ノートのメニューでオンにできます","可在每篇笔记的菜单中开启","각 노트의 메뉴에서 켤 수 있습니다"]);
+DICT.push(["Zoom", "Zoom", "Zoom", "Zoom", "Zoom", "Zoom", "Zoom", "ズーム", "缩放", "확대/축소"],["Ventana: aumentar el zoom", "Window: zoom in", "Janela: aumentar o zoom", "Fenêtre : zoom avant", "Fenster: vergrößern", "Finestra: aumenta lo zoom", "Finestra: augmenta el zoom", "ウィンドウ：拡大", "窗口：放大", "창: 확대"],["Ventana: reducir el zoom", "Window: zoom out", "Janela: reduzir o zoom", "Fenêtre : zoom arrière", "Fenster: verkleinern", "Finestra: riduci lo zoom", "Finestra: redueix el zoom", "ウィンドウ：縮小", "窗口：缩小", "창: 축소"],["Ventana: zoom al 100 %", "Window: zoom to 100%", "Janela: zoom a 100 %", "Fenêtre : zoom à 100 %", "Fenster: Zoom auf 100 %", "Finestra: zoom al 100%", "Finestra: zoom al 100 %", "ウィンドウ：100% に戻す", "窗口：缩放至 100%", "창: 100%로"],["Cada día", "Every day", "Todos os dias", "Chaque jour", "Jeden Tag", "Ogni giorno", "Cada dia", "毎日", "每天", "매일"],["Solo a mano", "Only manually", "Só à mão", "Seulement à la main", "Nur manuell", "Solo a mano", "Només a mà", "手動のみ", "仅手动", "수동으로만"],["De lunes a viernes", "Monday to Friday", "De segunda a sexta", "Du lundi au vendredi", "Montag bis Freitag", "Dal lunedì al venerdì", "De dilluns a divendres", "月曜〜金曜", "周一至周五", "월요일~금요일"],["Días", "Days", "Dias", "Jours", "Tage", "Giorni", "Dies", "日", "日", "일"],["Repetir filas", "Repeat rows", "Repetir linhas", "Répéter les lignes", "Zeilen wiederholen", "Ripeti righe", "Repeteix files", "行を繰り返す", "重复行", "행 반복"],["qué días aparece sola una fila para apuntar", "which days a row appears on its own", "em que dias aparece sozinha uma linha para anotar", "les jours où une ligne apparaît d'elle-même", "an welchen Tagen von selbst eine Zeile erscheint", "in quali giorni compare da sola una riga", "quins dies apareix sola una fila per apuntar", "行が自動で現れる曜日", "哪些天自动出现一行", "행이 자동으로 나타나는 날"],["Días de la semana", "Days of the week", "Dias da semana", "Jours de la semaine", "Wochentage", "Giorni della settimana", "Dies de la setmana", "曜日", "星期几", "요일"],["Días del mes", "Days of the month", "Dias do mês", "Jours du mois", "Tage des Monats", "Giorni del mese", "Dies del mes", "毎月の日付", "每月的日期", "매월 날짜"],["Se repite ese día en todos los meses. Si un mes no tiene el 29, 30 o 31, la fila va a su último día.", "It repeats on that day every month. If a month has no 29th, 30th or 31st, the row goes on its last day.", "Repete-se nesse dia em todos os meses. Se um mês não tiver o 29, 30 ou 31, a linha vai para o último dia.", "Cela se répète ce jour-là chaque mois. Si un mois n'a pas de 29, 30 ou 31, la ligne va au dernier jour.", "Wiederholt sich jeden Monat an diesem Tag. Hat ein Monat keinen 29., 30. oder 31., kommt die Zeile auf den letzten Tag.", "Si ripete in quel giorno ogni mese. Se un mese non ha il 29, 30 o 31, la riga va all'ultimo giorno.", "Es repeteix aquest dia cada mes. Si un mes no té el 29, 30 o 31, la fila va al darrer dia.", "毎月その日に繰り返します。29・30・31 日がない月は月末になります。", "每月的这一天重复。如果某月没有 29、30 或 31 日，该行放在当月最后一天。", "매월 그날에 반복됩니다. 29·30·31일이 없는 달은 마지막 날로 갑니다."],["Próxima fila:", "Next row:", "Próxima linha:", "Prochaine ligne :", "Nächste Zeile:", "Prossima riga:", "Propera fila:", "次の行：", "下一行：", "다음 행:"],["Elige al menos un día", "Choose at least one day", "Escolhe pelo menos um dia", "Choisissez au moins un jour", "Wähle mindestens einen Tag", "Scegli almeno un giorno", "Tria almenys un dia", "1 日以上選んでください", "至少选择一天", "하루 이상 선택하세요"],["Filas", "Rows", "Linhas", "Lignes", "Zeilen", "Righe", "Files", "行", "行", "행"],["Orden propio en «", "Custom order in «", "Ordem própria em «", "Ordre personnalisé dans «", "Eigene Reihenfolge in «", "Ordine personale in «", "Ordre propi a «", "独自の並び順：«", "自定义顺序：«", "직접 정한 순서: «"],["elemento", "item", "elemento", "élément", "Element", "elemento", "element", "件", "项", "개"],["elementos", "items", "elementos", "éléments", "Elemente", "elementi", "elements", "件", "项", "개"],["renombrar carpeta", "rename folder", "mudar o nome da pasta", "renommer le dossier", "Ordner umbenennen", "rinomina cartella", "canvia el nom de la carpeta", "フォルダ名の変更", "重命名文件夹", "폴더 이름 바꾸기"],["mover carpeta", "move folder", "mover pasta", "déplacer le dossier", "Ordner verschieben", "sposta cartella", "mou la carpeta", "フォルダの移動", "移动文件夹", "폴더 이동"],["crear", "create", "criar", "créer", "erstellen", "crea", "crea", "作成", "创建", "만들기"],["borrar carpeta", "delete folder", "apagar pasta", "supprimer le dossier", "Ordner löschen", "elimina cartella", "esborra la carpeta", "フォルダの削除", "删除文件夹", "폴더 삭제"],["borrar", "delete", "apagar", "supprimer", "löschen", "elimina", "esborra", "削除", "删除", "삭제"],["crear carpeta", "create folder", "criar pasta", "créer un dossier", "Ordner erstellen", "crea cartella", "crea una carpeta", "フォルダの作成", "创建文件夹", "폴더 만들기"],["mover", "move", "mover", "déplacer", "verschieben", "sposta", "mou", "移動", "移动", "이동"],["renombrar", "rename", "mudar o nome", "renommer", "umbenennen", "rinomina", "canvia el nom", "名前の変更", "重命名", "이름 바꾸기"],["ordenar", "reorder", "ordenar", "réordonner", "neu ordnen", "riordina", "ordena", "並べ替え", "排序", "정렬"],["No hay nada que deshacer en Notas", "Nothing to undo in Notes", "Nada para desfazer em Notas", "Rien à annuler dans Notes", "Nichts rückgängig zu machen in Notizen", "Niente da annullare in Note", "No hi ha res per desfer a Notes", "ノートで取り消す操作はありません", "笔记中没有可撤销的操作", "노트에서 실행 취소할 것이 없습니다"],["No hay nada que rehacer", "Nothing to redo", "Nada para refazer", "Rien à rétablir", "Nichts wiederherzustellen", "Niente da ripetere", "No hi ha res per refer", "やり直す操作はありません", "没有可重做的操作", "다시 실행할 것이 없습니다"],["Deshecho", "Undone", "Desfeito", "Annulé", "Rückgängig gemacht", "Annullato", "Desfet", "取り消しました", "已撤销", "실행 취소됨"],["Rehecho", "Redone", "Refeito", "Rétabli", "Wiederhergestellt", "Ripetuto", "Refet", "やり直しました", "已重做", "다시 실행됨"],["Las carpetas se mueven con Ctrl+X y Ctrl+V", "Folders are moved with Ctrl+X and Ctrl+V", "As pastas movem-se com Ctrl+X e Ctrl+V", "Les dossiers se déplacent avec Ctrl+X et Ctrl+V", "Ordner verschiebst du mit Strg+X und Strg+V", "Le cartelle si spostano con Ctrl+X e Ctrl+V", "Les carpetes es mouen amb Ctrl+X i Ctrl+V", "フォルダは Ctrl+X と Ctrl+V で移動します", "文件夹用 Ctrl+X 和 Ctrl+V 移动", "폴더는 Ctrl+X와 Ctrl+V로 옮깁니다"],["Cortado", "Cut", "Cortado", "Coupé", "Ausgeschnitten", "Tagliato", "Retallat", "切り取り", "已剪切", "잘라냄"],["Copiado", "Copied", "Copiado", "Copié", "Kopiert", "Copiato", "Copiat", "コピーしました", "已复制", "복사됨"],["Ctrl+V para pegar", "Ctrl+V to paste", "Ctrl+V para colar", "Ctrl+V pour coller", "Strg+V zum Einfügen", "Ctrl+V per incollare", "Ctrl+V per enganxar", "Ctrl+V で貼り付け", "按 Ctrl+V 粘贴", "Ctrl+V로 붙여넣기"],["Añadido a Notas", "Added to Notes", "Adicionado a Notas", "Ajouté à Notes", "Zu Notizen hinzugefügt", "Aggiunto a Note", "Afegit a Notes", "ノートに追加しました", "已添加到笔记", "노트에 추가됨"],["elementos añadidos a Notas", "items added to Notes", "elementos adicionados a Notas", "éléments ajoutés à Notes", "Elemente zu Notizen hinzugefügt", "elementi aggiunti a Note", "elements afegits a Notes", "件をノートに追加しました", "项已添加到笔记", "개를 노트에 추가함"],["Archivos: deshacer el último cambio", "Files: undo the last change", "Ficheiros: desfazer a última alteração", "Fichiers : annuler la dernière modification", "Dateien: letzte Änderung rückgängig machen", "File: annulla l'ultima modifica", "Fitxers: desfés l'últim canvi", "ファイル：最後の変更を取り消す", "文件：撤销上次更改", "파일: 마지막 변경 실행 취소"],["Archivos: rehacer", "Files: redo", "Ficheiros: refazer", "Fichiers : rétablir", "Dateien: wiederherstellen", "File: ripeti", "Fitxers: refés", "ファイル：やり直す", "文件：重做", "파일: 다시 실행"],["Lista de notas y carpetas", "Notes and folders list", "Lista de notas e pastas", "Liste des notes et dossiers", "Liste der Notizen und Ordner", "Elenco di note e cartelle", "Llista de notes i carpetes", "ノートとフォルダの一覧", "笔记和文件夹列表", "노트 및 폴더 목록"],["Deshacer lo hecho con notas y carpetas", "Undo changes to notes and folders", "Desfazer o que fizeste com notas e pastas", "Annuler les changements des notes et dossiers", "Änderungen an Notizen und Ordnern rückgängig machen", "Annulla le modifiche a note e cartelle", "Desfés el que has fet amb notes i carpetes", "ノートとフォルダの操作を取り消す", "撤销对笔记和文件夹的操作", "노트와 폴더 작업 실행 취소"],["Rehacer", "Redo", "Refazer", "Rétablir", "Wiederholen", "Ripeti", "Refés", "やり直す", "重做", "다시 실행"],["Moverse por la lista", "Move through the list", "Percorrer a lista", "Parcourir la liste", "Durch die Liste bewegen", "Muoversi nell'elenco", "Moure's per la llista", "一覧を移動", "在列表中移动", "목록 이동"],["Abrir", "Open", "Abrir", "Ouvrir", "Öffnen", "Apri", "Obre", "開く", "打开", "열기"],["Copiar, cortar y pegar", "Copy, cut and paste", "Copiar, cortar e colar", "Copier, couper et coller", "Kopieren, ausschneiden und einfügen", "Copia, taglia e incolla", "Copia, retalla i enganxa", "コピー・切り取り・貼り付け", "复制、剪切和粘贴", "복사, 잘라내기, 붙여넣기"],["Pegar texto o archivos como nota nueva", "Paste text or files as a new note", "Colar texto ou ficheiros como nota nova", "Coller du texte ou des fichiers comme nouvelle note", "Text oder Dateien als neue Notiz einfügen", "Incolla testo o file come nuova nota", "Enganxa text o fitxers com a nota nova", "テキストやファイルを新しいノートとして貼り付け", "将文本或文件粘贴为新笔记", "텍스트나 파일을 새 노트로 붙여넣기"],["Clic en un hueco y Ctrl+V", "Click an empty spot and Ctrl+V", "Clique num espaço vazio e Ctrl+V", "Clic dans un espace vide puis Ctrl+V", "In eine freie Stelle klicken und Strg+V", "Clic in uno spazio vuoto e Ctrl+V", "Clic en un espai buit i Ctrl+V", "空いている所をクリックして Ctrl+V", "点击空白处后按 Ctrl+V", "빈 곳을 클릭하고 Ctrl+V"],["Carpeta nueva", "New folder", "Nova pasta", "Nouveau dossier", "Neuer Ordner", "Nuova cartella", "Carpeta nova", "新しいフォルダ", "新建文件夹", "새 폴더"],["Ventana (PC)", "Window (PC)", "Janela (PC)", "Fenêtre (PC)", "Fenster (PC)", "Finestra (PC)", "Finestra (PC)", "ウィンドウ（PC）", "窗口（电脑）", "창(PC)"],["Zoom al 100 %", "Zoom to 100%", "Zoom a 100 %", "Zoom à 100 %", "Zoom auf 100 %", "Zoom al 100%", "Zoom al 100 %", "100% に戻す", "缩放至 100%", "100%로"]);
+DICT.push(["Sin resultados", "No results", "Sem resultados", "Aucun résultat", "Keine Treffer", "Nessun risultato", "Sense resultats", "見つかりません", "无结果", "결과 없음"],["Buscar en la nota", "Find in note", "Procurar na nota", "Rechercher dans la note", "In der Notiz suchen", "Cerca nella nota", "Cerca a la nota", "ノート内を検索", "在笔记中查找", "노트에서 찾기"],["Nota: buscar palabras", "Note: find words", "Nota: procurar palavras", "Note : rechercher des mots", "Notiz: Wörter suchen", "Nota: cerca parole", "Nota: cerca paraules", "ノート：単語を検索", "笔记：查找字词", "노트: 단어 찾기"],["Cerrar la búsqueda", "Close search", "Fechar a pesquisa", "Fermer la recherche", "Suche schließen", "Chiudi la ricerca", "Tanca la cerca", "検索を閉じる", "关闭查找", "찾기 닫기"]);
 const LCOLS=['es','en','pt','fr','de','it','ca','ja','zh','ko'];const TR={};LCOLS.slice(1).forEach(l=>TR[l]=new Map());DICT.forEach(r=>LCOLS.forEach((l,i)=>{if(i)TR[l].set(r[0],r[i])}));
 const PAT=[
   [/^Activar alarma (.+)$/,{en:'Turn on alarm $1',pt:'Ativar alarme $1',fr:'Activer l\'alarme $1',de:'Wecker $1 einschalten',it:'Attiva sveglia $1',ca:'Activa l\'alarma $1',ja:'アラーム $1 をオン',zh:'开启闹钟 $1',ko:'$1 알람 켜기'}],
@@ -5470,7 +5508,7 @@ $('vn-ribbon').onclick=e=>{const b=e.target.closest('[data-rib]');if(!b)return;c
   ({graph:()=>openGraph(),canvas:()=>newCanvas(),daily:()=>openDaily(dk(new Date())),cmd:()=>PL('palette')?openQS('cmd'):$('nb-menu').click(),cal:()=>show('cal'),settings:()=>$('ob-settings').click()}[k]||(()=>{}))()};
 $('desk-empty').onclick=e=>{const b=e.target.closest('[data-de]');if(!b)return;({new:()=>$('nb-new').click(),open:()=>PL('switcher')?openQS('note'):$('nb-search').click(),canvas:()=>newCanvas(),close:()=>{}}[b.dataset.de])()};
 document.addEventListener('keydown',e=>{if(!document.body.classList.contains('desknotes'))return;const k=e.key.toLowerCase();
-  if((e.ctrlKey||e.metaKey)&&k==='n'){e.preventDefault();$('nb-new').click()}else if((e.ctrlKey||e.metaKey)&&k==='o'){e.preventDefault();PL('switcher')?openQS('note'):$('nb-search').click()}
+  if((e.ctrlKey||e.metaKey)&&k==='n'&&!e.shiftKey){e.preventDefault();$('nb-new').click()}else if((e.ctrlKey||e.metaKey)&&k==='o'){e.preventDefault();PL('switcher')?openQS('note'):$('nb-search').click()}
   else if((e.ctrlKey||e.metaKey)&&k==='w'&&cvNote){e.preventDefault();const x=$('ne-tabsbar').querySelector(`[data-dclose="${cvNote.id}"]`);if(x)x.click();else closeCanvas()}
   else if((e.ctrlKey||e.metaKey)&&k==='w'&&curNote){e.preventDefault();const id=curNote.id;openTabs=openTabs.filter(x=>x!==id);if(openTabs.length)openNote(openTabs[openTabs.length-1]);else closeNote();dropBlank(id);renderDeskTabs();applyDesk()}
   else if(e.altKey&&!e.ctrlKey&&!e.metaKey&&(k==='arrowleft'||k==='arrowright')&&!(/Mac/.test(navigator.platform)&&e.target.closest('input,textarea,[contenteditable="true"]'))&&$('canvasview').hidden){e.preventDefault();$(k==='arrowleft'?'nb-back':'nb-fwd').click()}});
@@ -5740,9 +5778,12 @@ const FDB=(()=>{let p;const open=()=>p||(p=new Promise((ok,ko)=>{try{const r=ind
   const tx=(m,fn)=>open().then(db=>new Promise((ok,ko)=>{const t=db.transaction('f',m),st=t.objectStore('f'),r=fn(st);t.oncomplete=()=>ok(r&&r.result);t.onerror=()=>ko(t.error)}));
   return {get:id=>tx('readonly',s=>s.get(id)),put:(id,b)=>tx('readwrite',s=>s.put(b,id)),del:id=>tx('readwrite',s=>s.delete(id))}})();
 const FMEM={},FBYTES={};
+const ATTX=new Map();
 async function fileGet(id){if(FMEM[id])return FMEM[id];try{const b=await FDB.get(id);if(b){FMEM[id]=b;return b}}catch(e){}return null}
 async function filePut(id,blob){FMEM[id]=blob;try{FBYTES[id]=new Uint8Array(await blob.arrayBuffer())}catch(e){}try{await FDB.put(id,blob);return true}catch(e){return false}}
-function fileDel(id){delete FMEM[id];delete FBYTES[id];FDB.del(id).catch(()=>{})}
+/* Lo borrado se queda un rato en memoria: así Ctrl+Z en Notas puede devolver una imagen o un archivo */
+function attxPut(k,v){if(!v)return;ATTX.delete(k);ATTX.set(k,v);while(ATTX.size>40)ATTX.delete(ATTX.keys().next().value)}
+function fileDel(id){const m=FMEM[id];delete FMEM[id];delete FBYTES[id];if(m){attxPut('f'+id,m);FDB.del(id).catch(()=>{});return}FDB.get(id).then(b=>attxPut('f'+id,b)).catch(()=>{}).finally(()=>FDB.del(id).catch(()=>{}))}
 setTimeout(async()=>{for(const a of S.atts.filter(x=>x.kind==='file')){const b=await fileGet(a.id);if(b)FBYTES[a.id]=new Uint8Array(await b.arrayBuffer())}},1500);
 const EXT_MIME={pdf:'application/pdf',mp3:'audio/mpeg',m4a:'audio/mp4',wav:'audio/wav',ogg:'audio/ogg',opus:'audio/ogg',mp4:'video/mp4',webm:'video/webm',mov:'video/quicktime',txt:'text/plain',md:'text/markdown',csv:'text/csv',json:'application/json',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation',zip:'application/zip',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',webp:'image/webp'};
 const extOf=n=>(String(n).split('.').pop()||'').toLowerCase();
@@ -6458,7 +6499,7 @@ $('dv-add').onclick=()=>openEvent(null,dvKey);
 const IMGS={};
 const getImg=id=>IMGS[id]||LS.get('img_'+id,null);
 const setImg=(id,d)=>{IMGS[id]=d;return LS.set('img_'+id,d)};
-const delImg=id=>{delete IMGS[id];try{localStorage.removeItem('vt2_img_'+id)}catch(e){}};
+const delImg=id=>{attxPut('i'+id,getImg(id));delete IMGS[id];try{localStorage.removeItem('vt2_img_'+id)}catch(e){}};
 S.events.forEach(e=>{if(e.kind==='task'&&!e.list)e.list='default'});
 const STAR='<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>';
 const STAR_O='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>';
@@ -6853,8 +6894,8 @@ function sortFolders(a,mode){mode=mode||S.obFSort;const nm=(x,y)=>cmpName(baseNa
     custom:(x,y)=>{const p=parentOf(x);if(p!==parentOf(y))return cmpName(x,y);const L=S.obOrder['F:'+p]||[],i=L.indexOf(x),j=L.indexOf(y);if(i<0&&j<0)return nm(x,y);if(i<0)return -1;if(j<0)return 1;return i-j}}[mode]||nm;return a.sort(f)}
 /* Orden propio de una carpeta (menú de la carpeta): manda sobre el general para lo que tiene dentro.
    Sus subcarpetas siguen el mismo criterio; «creado» se aplica a ellas como «editado». */
-const modeFor=f=>(f&&S.obFolderSort[f])||S.obSort;
-const fModeFor=f=>{const m=f&&S.obFolderSort[f];return m?({cnew:'mnew',cold:'mold'}[m]||m):S.obFSort};
+const modeFor=f=>S.obFolderSort[f||'']||S.obSort;
+const fModeFor=f=>{const m=S.obFolderSort[f||''];return m?({cnew:'mnew',cold:'mold'}[m]||m):S.obFSort};
 function setFolderSort(p,mode){
   if(mode==='custom'){if(!S.obOrder['N:'+p])S.obOrder['N:'+p]=sortItems([...S.notes,...S.atts].filter(x=>(x.folder||'')===p),modeFor(p)).map(x=>x.id);
     if(!S.obOrder['F:'+p])S.obOrder['F:'+p]=sortFolders(allFolders().filter(f=>parentOf(f)===p),fModeFor(p))}
@@ -6867,10 +6908,15 @@ function setObSort(kind,mode){const ps=['',...allFolders()];
   if(mode==='custom'){if(kind==='F')ps.forEach(p=>{if(!S.obOrder['F:'+p])S.obOrder['F:'+p]=sortFolders(allFolders().filter(f=>parentOf(f)===p),fModeFor(p))});
     else ps.forEach(p=>{if(!S.obOrder['N:'+p])S.obOrder['N:'+p]=sortItems([...S.notes,...S.atts].filter(x=>(x.folder||'')===p),modeFor(p)).map(x=>x.id)})}
   if(kind==='F')S.obFSort=mode;else S.obSort=mode;save();renderNotes();if(mode==='custom')toast(T(kind==='F'?'Mantén pulsada una carpeta y arrástrala para ordenarla':'Mantén pulsada una nota y arrástrala para ordenarla'))}
-/* Soltar una carpeta o una nota antes o después de otra (orden personalizado) */
+/* Ordenar arrastrando funciona con cualquier orden: el nivel donde se suelta pasa a orden propio, partiendo de lo que se veía (sus notas y sus subcarpetas) */
+function obCustom(p){if(modeFor(p)==='custom'&&fModeFor(p)==='custom')return false;
+  S.obOrder['N:'+p]=sortItems([...S.notes,...S.atts].filter(x=>(x.folder||'')===p),modeFor(p)).map(x=>x.id);
+  S.obOrder['F:'+p]=sortFolders(allFolders().filter(f=>parentOf(f)===p),fModeFor(p));S.obFolderSort[p]='custom';return true}
+/* Soltar una carpeta o una nota antes o después de otra */
 function obReorder(kind,id,target,after){
-  if(kind==='F'){const p=parentOf(target),sib=sortFolders(allFolders().filter(f=>parentOf(f)===p&&f!==id),'custom');sib.splice(sib.indexOf(target)+(after?1:0),0,id);S.obOrder['F:'+p]=sib}
-  else{const get=i=>nget(i)||S.atts.find(a=>a.id===i),x=get(id),tx=get(target);if(!x||!tx)return;const f=tx.folder||'';
+  if(kind==='F'){const p=parentOf(target);if(obCustom(p))toast(T('Orden propio en «')+(p?baseName(p):(S.vaults.find(v=>v.id===S.curVault)||{}).name||T('Notas'))+'»');
+    const sib=sortFolders(allFolders().filter(f=>parentOf(f)===p&&f!==id),'custom');sib.splice(sib.indexOf(target)+(after?1:0),0,id);S.obOrder['F:'+p]=sib}
+  else{const get=i=>nget(i)||S.atts.find(a=>a.id===i),x=get(id),tx=get(target);if(!x||!tx)return;const f=tx.folder||'';if(obCustom(f)&&(x.folder||'')===f)toast(T('Orden propio en «')+(f?baseName(f):(S.vaults.find(v=>v.id===S.curVault)||{}).name||T('Notas'))+'»');
     if((x.folder||'')!==f){x.folder=f;toast('Movido a "'+(f?baseName(f):(S.vaults.find(v=>v.id===S.curVault)||{}).name)+'"')}
     const sib=sortItems([...S.notes,...S.atts].filter(o=>(o.folder||'')===f&&o!==x),'custom').map(o=>o.id);sib.splice(sib.indexOf(target)+(after?1:0),0,id);S.obOrder['N:'+f]=sib}
   save()}
@@ -6893,7 +6939,7 @@ function renameNote(n,nw){const old=n.title;n.title=nw;n.updated=Date.now();
 function notePath(n){return (n.folder?n.folder+'/':'')+(n.title||'Sin título')}
 
 /* --- Árbol de archivos --- */
-let obSel=null,obRenaming=null,obSuppress=false,obPmenu=false;
+let obSel=null,obRenaming=null,obSuppress=false,obPmenu=false,obNew=new Map();
 function treeHTML(parent){
   let h='';
   const n3=notes3(),subs=f=>allFolders().some(x=>parentOf(x)===f);
@@ -6905,7 +6951,7 @@ function treeHTML(parent){
   sortItems([...S.notes.filter(n=>(n.folder||'')===parent),...S.atts.filter(a=>(a.folder||'')===parent)],modeFor(parent)).forEach(x=>{
     const isN=x.title!=null,on=isN?S.obActive===x.id&&(!obSel||obSel.type!=='folder'):(obSel&&obSel.id===x.id);
     if(obRenaming==='n:'+x.id||obRenaming==='a:'+x.id){h+=`<div class="ob-row ob-editrow"><input class="ob-edit" id="ob-edit" value="${esc(isN?x.title:x.name.replace(/\.\w+$/,''))}" data-kind="${isN?'n':'a'}" data-ref="${x.id}" aria-label="Nombre"></div>`;return}
-    h+=`<button class="ob-row${on?' on':''}" ${isN?`data-note="${x.id}"`:`data-att="${x.id}"`}><span class="vn-glyph${isN?(isCanvas(x)?' cvg':''):' img'}"${!isN&&attType(x)!=='img'?` style="color:${FT_IC[attType(x)][0]}"`:''}>${!isN&&attType(x)!=='img'?`<b class="ft-mini">${FT_IC[attType(x)][1]}</b>`:isN?(isCanvas(x)?'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><path d="M10 6.5h4a2.5 2.5 0 0 1 2.5 2.5v5"/></svg>':''):OB_IC.img}</span><span class="vn-ntext"><span class="ob-name"${isN&&x.color?` style="color:${x.color}"`:''}>${esc(isN?(x.title||'Sin título'):x.name.replace(/\.\w+$/,''))}</span>${isN?`<span class="vn-sub">${nAgo(x.updated||x.created||Date.now())}${isCanvas(x)?' · lienzo · '+cvParse(x).nodes.length+(cvParse(x).nodes.length===1?' tarjeta':' tarjetas'):''}${(isCanvas(x)?[]:tagsOf(x)).slice(0,2).map(t=>' · #'+esc(t)).join('')}</span>`:''}</span>${isN&&x.date?`<span class="ob-badge vn-date">${shortDate(x.date)}</span>`:''}${isN?'':`<span class="ob-badge">${esc((x.name.split('.').pop()||'').toUpperCase())}</span>`}</button>`});
+    h+=`<button class="ob-row${on?' on':''}${obNew.has(x.id)?' ob-new':''}" ${isN?`data-note="${x.id}"`:`data-att="${x.id}"`}><span class="vn-glyph${isN?(isCanvas(x)?' cvg':''):' img'}"${!isN&&attType(x)!=='img'?` style="color:${FT_IC[attType(x)][0]}"`:''}>${!isN&&attType(x)!=='img'?`<b class="ft-mini">${FT_IC[attType(x)][1]}</b>`:isN?(isCanvas(x)?'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><path d="M10 6.5h4a2.5 2.5 0 0 1 2.5 2.5v5"/></svg>':''):OB_IC.img}</span><span class="vn-ntext"><span class="ob-name"${isN&&x.color?` style="color:${x.color}"`:''}>${esc(isN?(x.title||'Sin título'):x.name.replace(/\.\w+$/,''))}</span>${isN?`<span class="vn-sub">${nAgo(x.updated||x.created||Date.now())}${isCanvas(x)?' · lienzo · '+cvParse(x).nodes.length+(cvParse(x).nodes.length===1?' tarjeta':' tarjetas'):''}${(isCanvas(x)?[]:tagsOf(x)).slice(0,2).map(t=>' · #'+esc(t)).join('')}</span>`:''}</span>${isN&&x.date?`<span class="ob-badge vn-date">${shortDate(x.date)}</span>`:''}${isN?'':`<span class="ob-badge">${esc((x.name.split('.').pop()||'').toUpperCase())}</span>`}</button>`});
   return h;
 }
 /* Solo al cambiar la nota activa (o al activarlo): en cada render impediría elegir otra carpeta o cerrar la suya */
@@ -6941,7 +6987,7 @@ function renderNoteCol(){if(!notes3())return;const f=vlFolder(),L=$('vn-list'),a
   const snip=n=>isCanvas(n)?T('Lienzo'):(n.body||'').slice(0,240).replace(/<[^>]+>/g,'').replace(/[#*_`>~\[\]-]+/g,' ').replace(/\s+/g,' ').trim();
   const rows=items.map(x=>{const isN=x.title!=null,k=isN?'n:':'a:';
     if(obRenaming===k+x.id)return `<div class="vl-row"><input class="ob-edit" id="ob-edit" value="${esc(isN?x.title:x.name.replace(/\.\w+$/,''))}" data-kind="${isN?'n':'a'}" data-ref="${x.id}" aria-label="Nombre"></div>`;
-    return `<button class="vl-row${isN&&S.obActive===x.id?' on':''}" ${isN?`data-note="${x.id}"`:`data-att="${x.id}"`}><b${isN&&x.color?` style="color:${x.color}"`:''}>${esc(isN?x.title||'Sin título':x.name)}</b><span><i>${date(x.updated||x.created)}</i>${esc([f==='*'&&x.folder?baseName(x.folder):'',isN?snip(x):''].filter(Boolean).join(' · '))}</span></button>`}).join('');
+    return `<button class="vl-row${isN&&S.obActive===x.id?' on':''}${obNew.has(x.id)?' ob-new':''}" ${isN?`data-note="${x.id}"`:`data-att="${x.id}"`}><b${isN&&x.color?` style="color:${x.color}"`:''}>${esc(isN?x.title||'Sin título':x.name)}</b><span><i>${date(x.updated||x.created)}</i>${esc([f==='*'&&x.folder?baseName(x.folder):'',isN?snip(x):''].filter(Boolean).join(' · '))}</span></button>`}).join('');
   /* Subcarpetas directas arriba, como en el árbol: el contador de la carpeta ya las incluye */
   const subs=f==='*'||f===''?[]:sortFolders(allFolders().filter(x=>parentOf(x)===f),fModeFor(f)),cnt=items.length+subs.length;
   const srows=subs.map(x=>{const c=[...S.notes,...S.atts].filter(y=>(y.folder||'')===x||(y.folder||'').startsWith(x+'/')).length;return `<button class="vl-row vl-sub" data-fall="${esc(x)}"><b><span class="vn-ftile"${folderColor(x)?` style="color:${folderColor(x)}"`:''}>${OB_IC.folder}</span>${esc(baseName(x))}</b><span>${c} ${c===1?T('elemento'):T('elementos')}</span></button>`}).join('');
@@ -7164,6 +7210,7 @@ function noteCtx(n){const bm=isBm(n.id),g=gitTag('n',n.id);
     ['sep'],['Color del título',MI.rename,()=>pickColor('Color de la nota',n.color,c=>{n.color=c;save();renderNotes();applyNoteStyle()})],['Compartir',MI.share,()=>shareNote(n)],
     ['sep'],['Renombrar',MI.rename,()=>{obRenaming='n:'+n.id;renderNotes()}],['Borrar',MI.trash,()=>delNoteAsk(n),'',0,1]];
   ctxSheet((n.title||'Sin título')+(isCanvas(n)?'.canvas':'.md'),`Última modificación: ${fmtDT(n.updated)}<br>Creado: ${fmtDT(n.created)}`,A)}
+function folderDelAsk(p){const label=baseName(p),cnt=[...S.notes,...S.atts].filter(x=>inFolder(x,p)).length;obConfirm(`¿Eliminar "${label}"${cnt?' y '+cnt+' archivos':''}?`,'Eliminar',()=>{S.notes.filter(x=>inFolder(x,p)).forEach(trashNote);S.atts=S.atts.filter(x=>!inFolder(x,p));S.folders=S.folders.filter(f=>f!==p&&!f.startsWith(p+'/'));save();renderNotes();toast('Eliminado')})}
 function folderCtx(p){const files=[...S.notes,...S.atts].filter(x=>(x.folder||'')===p).length,subs=allFolders().filter(f=>f.startsWith(p+'/')&&!f.slice(p.length+1).includes('/')).length,g=gitTag('f',p);
   const isB=S.bookmarks.some(b=>b.type==='folder'&&b.ref===p),label=baseName(p);
   const fs=S.obFolderSort[p],fsl=fs?SORTS.concat([CUST]).find(x=>x[0]===fs)[1].replace(/^Ordenar por /,'').replace(/^./,c=>c.toUpperCase()):T('Como el resto');
@@ -7175,7 +7222,7 @@ function folderCtx(p){const files=[...S.notes,...S.atts].filter(x=>(x.folder||''
     ...gitCtx('f',p,label),
     ['sep'],['Copiar ruta',MI.clip,()=>copyPathMenu('folder',p),'',1],
     ['sep'],['Compartir',MI.share,()=>shareFolder(p)],
-    ['sep'],['Renombrar',MI.rename,()=>{obRenaming='f:'+p;renderNotes()}],['Borrar',MI.trash,()=>{const cnt=[...S.notes,...S.atts].filter(x=>inFolder(x,p)).length;obConfirm(`¿Eliminar "${label}"${cnt?' y '+cnt+' archivos':''}?`,'Eliminar',()=>{S.notes.filter(x=>inFolder(x,p)).forEach(trashNote);S.atts=S.atts.filter(x=>!inFolder(x,p));S.folders=S.folders.filter(f=>f!==p&&!f.startsWith(p+'/'));save();renderNotes();toast('Eliminado')})},'',0,1]];
+    ['sep'],['Renombrar',MI.rename,()=>{obRenaming='f:'+p;renderNotes()}],['Borrar',MI.trash,()=>folderDelAsk(p),'',0,1]];
   ctxSheet(label,`${files} ${files===1?'archivo':'archivos'}, ${subs} ${subs===1?'carpeta':'carpetas'}`,A)}
 /* «Todas las notas» y «Sin carpeta» no se pueden renombrar ni borrar, pero también tienen menú: lo que se puede crear y ordenar en ellas */
 function allCtx(k){const tool=(t,at)=>{const b=$('ob-tools').querySelector(`[data-tool=${t}]`);if(!b)return;if(at!=null)b._at=at;b.click()},n=k==='*'?S.notes.length+S.atts.length:[...S.notes,...S.atts].filter(x=>!x.folder).length;
@@ -7203,13 +7250,13 @@ const obPD=e=>{
   if(e.button>0||e.target.closest('input'))return;const row=e.target.closest('[data-note],[data-folder],[data-att],[data-bm],[data-bmg]');if(!row)return;
   lp={row,sx:e.clientX,sy:e.clientY,t:setTimeout(()=>{const r=lp&&lp.row;lp=null;if(r)startDrag(r,e.clientX,e.clientY)},420)}};
 $('ob-list').addEventListener('pointerdown',obPD);$('vn-list').addEventListener('pointerdown',obPD);
-document.addEventListener('pointermove',e=>{if(lp&&Math.hypot(e.clientX-lp.sx,e.clientY-lp.sy)>8){const l=lp,d=l.row.dataset;clearTimeout(l.t);lp=null;if(e.pointerType==='mouse'&&(d.note||d.folder||d.att)){startDrag(l.row,e.clientX,e.clientY);drag.sx=l.sx;drag.sy=l.sy}}if(drag){drag.x=e.clientX;drag.y=e.clientY;moveDrag()}});
+document.addEventListener('pointermove',e=>{if(lp&&Math.hypot(e.clientX-lp.sx,e.clientY-lp.sy)>8){const l=lp,d=l.row.dataset;clearTimeout(l.t);lp=null;if(e.pointerType==='mouse'&&(d.note||d.folder||d.att)){startDrag(l.row,e.clientX,e.clientY);drag.sx=l.sx;drag.sy=l.sy}}if(drag){drag.x=e.clientX;drag.y=e.clientY;if(!obOutCheck(e))moveDrag()}});
 document.addEventListener('pointerup',()=>{if(lp){clearTimeout(lp.t);lp=null}if(drag)endDrag(false)});
 document.addEventListener('pointercancel',()=>{if(lp){clearTimeout(lp.t);lp=null}if(drag)endDrag(true)});
 document.addEventListener('touchmove',e=>{if(drag)e.preventDefault()},{passive:false});
 function startDrag(row,x,y){
   const d=row.dataset;let t,id,name;
-  if(d.note){t='note';id=d.note;name=nget(id).title||'Sin título'}else if(d.folder){t='folder';id=d.folder;name=baseName(id)}else if(d.att){t='att';id=d.att;name=S.atts.find(a=>a.id===id).name}
+  if(d.note){t='note';id=d.note;name=nget(id).title||'Sin título'}else if(d.folder){t='folder';id=d.folder;const n=[...S.notes,...S.atts].filter(x=>(x.folder||'')===id||(x.folder||'').startsWith(id+'/')).length;name=baseName(id)+(n?' · '+n+' '+T(n===1?'elemento':'elementos'):'')}else if(d.att){t='att';id=d.att;name=S.atts.find(a=>a.id===id).name}
   else{ctxMenu(row);return}
   drag={t,id,name,x,y,sx:x,sy:y,moved:false,hov:null,hovT:0,row};
   const g=document.createElement('div');g.className='ob-ghost';g.innerHTML=(t==='folder'?OB_IC.folder:t==='att'?OB_IC.img:OB_IC.note)+`<span>${esc(name)}</span>`;document.body.appendChild(g);drag.g=g;if(window.lgRefract)window.lgRefract(g,true);
@@ -7218,15 +7265,15 @@ function startDrag(row,x,y){
 function dropTarget(){const el=document.elementFromPoint(drag.x,drag.y);if(!el)return null;const inVL=!!el.closest('#vn-list');if(!inVL&&!el.closest('#ob-list'))return null;
   const r=el.closest('[data-folder],[data-note],[data-att]'),rb=r&&r.getBoundingClientRect(),rel=r?(drag.y-rb.top)/rb.height:0;
   /* Columna de notas (PC): solo para ordenar dentro de la carpeta elegida */
-  if(inVL){const rid=r&&(r.dataset.note||r.dataset.att);if(!rid||rid===drag.id||drag.t==='folder'||vlFolder()==='*'||modeFor(vlFolder())!=='custom')return null;return {f:vlFolder(),el:null,re:{kind:'N',id:rid,after:rel>.5,row:r}}}
+  if(inVL){const rid=r&&(r.dataset.note||r.dataset.att);if(!rid||rid===drag.id||drag.t==='folder'||vlFolder()==='*')return null;return {f:vlFolder(),el:null,re:{kind:'N',id:rid,after:rel>.5,row:r}}}
   if(!r)return {f:'',el:null};
   if(r.dataset.folder){const rf=r.dataset.folder;
     /* Orden personalizado: arriba o abajo de una carpeta hermana la coloca antes o después; en el centro, dentro */
-    if(drag.t==='folder'&&fModeFor(parentOf(drag.id))==='custom'&&rf!==drag.id&&parentOf(rf)===parentOf(drag.id)&&(rel<.3||rel>.7))return {f:parentOf(drag.id),el:null,re:{kind:'F',id:rf,after:rel>.5,row:r}};
+    if(drag.t==='folder'&&rf!==drag.id&&parentOf(rf)===parentOf(drag.id)&&(rel<.3||rel>.7))return {f:parentOf(drag.id),el:null,re:{kind:'F',id:rf,after:rel>.5,row:r}};
     return {f:rf,el:r}}
   const rid=r.dataset.note||r.dataset.att,x=r.dataset.note?nget(r.dataset.note):S.atts.find(a=>a.id===r.dataset.att);
   const f=x?x.folder||'':'';
-  if(drag.t!=='folder'&&modeFor(f)==='custom'&&rid!==drag.id)return {f,el:null,re:{kind:'N',id:rid,after:rel>.5,row:r}};
+  if(drag.t!=='folder'&&rid!==drag.id)return {f,el:null,re:{kind:'N',id:rid,after:rel>.5,row:r}};
   return {f,el:f?$('ob-list').querySelector(`[data-folder="${CSS.escape(f)}"]`):null}}
 function moveDrag(){if(!drag)return;
   if(Math.hypot(drag.x-drag.sx,drag.y-drag.sy)>6)drag.moved=true;
@@ -7265,6 +7312,141 @@ function endDrag(cancel){const d=drag;drag=null;clearInterval(d.iv);const land=l
   else{const x=d.t==='note'?nget(d.id):S.atts.find(a=>a.id===d.id);if(x&&(x.folder||'')!==f){x.folder=f;save();toast('Movido a "'+(f?baseName(f):(S.vaults.find(v=>v.id===S.curVault)||{}).name)+'"')}}
   if(f)S.obOpen[f]=true;save();renderNotes();
 }
+/* ===================== Deshacer y rehacer con archivos ===================== */
+/* Ctrl+Z / Ctrl+Y en Notas deshacen y rehacen lo hecho con notas, carpetas y adjuntos: crear, borrar, mover, renombrar, ordenar, pegar o soltar.
+   No hace falta tocar cada operación: al guardar se compara la estructura (títulos, carpetas, qué existe y el orden) con la de antes.
+   Escribir en una nota no cuenta, ni lo que trae una sincronización. El texto de una nota solo se repone si lo cambió la propia operación
+   (los enlaces al renombrar) y no se ha vuelto a tocar */
+const FS={u:[],r:[],base:null,t:0,hold:0,quiet:false};
+function fsSnap(){return {v:S.curVault,n:new Map(S.notes.map(x=>[x.id,{o:x,title:x.title,folder:x.folder||'',body:x.body}])),a:new Map(S.atts.map(x=>[x.id,{o:x,name:x.name,folder:x.folder||''}])),
+  fl:S.folders.slice(),f:S.folders.slice().sort().join('\n'),ord:JSON.stringify(S.obOrder||{}),fso:JSON.stringify(S.obFolderSort||{}),so:S.obSort,fs:S.obFSort,bm:JSON.stringify(S.bookmarks||[])}}
+function fsMoved(a,b){if(a.n.size!==b.n.size||a.a.size!==b.a.size||a.f!==b.f||a.ord!==b.ord||a.fso!==b.fso||a.so!==b.so||a.fs!==b.fs)return true;
+  for(const [id,x] of b.n){const y=a.n.get(id);if(!y||y.title!==x.title||y.folder!==x.folder)return true}
+  for(const [id,x] of b.a){const y=a.a.get(id);if(!y||y.name!==x.name||y.folder!==x.folder)return true}return false}
+function fsCheck(){clearTimeout(FS.t);FS.t=0;const b=fsSnap(),a=FS.base;FS.base=b;
+  if(!a||a.v!==b.v){FS.u=[];FS.r=[];return}
+  if(FS.quiet||ghBusy||window.__dirBusy||!fsMoved(a,b))return;FS.u.push({a,b});if(FS.u.length>60)FS.u.shift();FS.r=[]}
+window.fsDirty=()=>{if(!FS.hold&&!FS.t)FS.t=setTimeout(fsCheck,300)};
+const fsFlush=()=>{if(FS.t)fsCheck()};
+/* Varios pasos (soltar diez archivos) son una sola operación */
+async function fsBatch(fn){fsFlush();FS.hold++;try{return await fn()}finally{FS.hold--;if(!FS.hold)fsCheck()}}
+FS.base=fsSnap();
+function fsBlobBack(id){const i=ATTX.get('i'+id),f=ATTX.get('f'+id);if(i&&!getImg(id))setImg(id,i);if(f)filePut(id,f)}
+function fsApply(from,to){FS.quiet=true;try{
+    /* Notas: las que no había antes se van a la papelera (por si se escribió en ellas); las que faltan vuelven tal cual */
+    for(const [id] of from.n)if(!to.n.has(id)){const n=nget(id);if(!n)continue;if(curNote===n){curNote=null;$('noteview').hidden=true;applyDesk()}if(typeof cvNote!=='undefined'&&cvNote===n)closeCanvas();trashNote(n)}
+    for(const [id,x] of to.n){let n=nget(id);const y=from.n.get(id);
+      if(!n){n=x.o;n.title=x.title;n.folder=x.folder;n.body=x.body;S.notes.push(n);S.trash=(S.trash||[]).filter(z=>!(z.note&&z.note.id===id));continue}
+      if(!y)continue;if(n.title===y.title)n.title=x.title;if((n.folder||'')===y.folder)n.folder=x.folder;if(y.body!==x.body&&n.body===y.body)n.body=x.body;if(n===curNote){$('ne-title').value=n.title;renderNoteMeta()}}
+    for(const [id] of from.a)if(!to.a.has(id)){const a=S.atts.find(z=>z.id===id);if(a){S.atts=S.atts.filter(z=>z!==a);delImg(a.id);fileDel(a.id)}}
+    for(const [id,x] of to.a){let a=S.atts.find(z=>z.id===id);const y=from.a.get(id);
+      if(!a){a=x.o;a.name=x.name;a.folder=x.folder;S.atts.push(a);fsBlobBack(id);continue}
+      if(!y)continue;if(a.name===y.name)a.name=x.name;if((a.folder||'')===y.folder)a.folder=x.folder}
+    if(from.f!==to.f)S.folders=to.fl.slice();if(from.ord!==to.ord)S.obOrder=JSON.parse(to.ord);if(from.fso!==to.fso)S.obFolderSort=JSON.parse(to.fso);
+    if(from.so!==to.so)S.obSort=to.so;if(from.fs!==to.fs)S.obFSort=to.fs;if(from.bm!==to.bm)S.bookmarks=JSON.parse(to.bm);
+    /* Se abren las carpetas donde vuelve a estar lo que se ha movido, para verlo */
+    [...to.n,...to.a].forEach(([id,x])=>{const y=from.n.get(id)||from.a.get(id);if(!y||y.folder!==x.folder){let f=x.folder;while(f){S.obOpen[f]=true;f=parentOf(f)}}});
+    save();renderNotes();if(typeof renderCal==='function')renderCal();if(DESK.matches)renderDeskTabs()}
+  finally{clearTimeout(FS.t);FS.t=0;FS.base=fsSnap();FS.quiet=false}}
+/* Qué se deshace, en pocas palabras: «mover «Uno»», «borrar 3 elementos», «crear carpeta «Alfa»» */
+function fsWhat(a,b){const nm=x=>'«'+(x.title!=null?(x.title||T('Sin título')):x.name)+'»',one=(v,w)=>w+' '+(v.length===1?nm(v[0]):v.length+' '+T('elementos')),
+    pick=(A,B)=>[...[...B.n].filter(([k])=>!A.n.has(k)),...[...B.a].filter(([k])=>!A.a.has(k))].map(p=>p[1]),add=pick(a,b),del=pick(b,a),
+    ch=[...[...b.n].map(([k,x])=>[a.n.get(k),x]),...[...b.a].map(([k,x])=>[a.a.get(k),x])].filter(p=>p[0]),
+    mv=ch.filter(([y,x])=>y.folder!==x.folder).map(p=>p[1]),rn=ch.filter(([y,x])=>(y.title!=null?y.title:y.name)!==(x.title!=null?x.title:x.name)).map(p=>p[1]),
+    fa=new Set(a.fl),fb=new Set(b.fl),fnew=b.fl.filter(f=>!fa.has(f)),fgone=a.fl.filter(f=>!fb.has(f)),q=f=>'«'+baseName(f)+'»';
+  if(fnew.length===1&&fgone.length===1)return (parentOf(fnew[0])===parentOf(fgone[0])?T('renombrar carpeta'):T('mover carpeta'))+' '+q(fnew[0]);
+  if(add.length)return one(add,T('crear'));if(fgone.length)return T('borrar carpeta')+' '+q(fgone[0]);if(del.length)return one(del,T('borrar'));
+  if(fnew.length)return T('crear carpeta')+' '+q(fnew[0]);if(mv.length)return one(mv,T('mover'));if(rn.length)return one(rn,T('renombrar'));return T('ordenar')}
+function fsUndo(){fsFlush();const e=FS.u.pop();if(!e){toast(T('No hay nada que deshacer en Notas'));return}fsApply(e.b,e.a);FS.r.push(e);toast(T('Deshecho')+': '+fsWhat(e.a,e.b))}
+function fsRedo(){fsFlush();const e=FS.r.pop();if(!e){toast(T('No hay nada que rehacer'));return}fsApply(e.a,e.b);FS.u.push(e);toast(T('Rehecho')+': '+fsWhat(e.a,e.b))}
+
+/* ===================== La lista de Notas con el teclado ===================== */
+/* Con la lista elegida (una fila, o un clic en un hueco vacío): ↑ ↓ para moverse, Intro abre, F2 renombra, Supr borra,
+   Ctrl+C / Ctrl+X / Ctrl+V copian, cortan y pegan notas y adjuntos (las carpetas se mueven con Ctrl+X). Pegar texto, una imagen o archivos
+   de fuera crea una nota sin nombre, o el adjunto, en la carpeta elegida, y sale resaltado */
+let obClip=null;
+function obKeysOn(){if(typeof view==='undefined'||view!=='notes'||!$('ob-qs').hidden||!$('canvasview').hidden||document.querySelector('.sheet-back:not([hidden])'))return false;const a=document.activeElement;return !a||!(a.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))}
+const obListFocus=()=>{const a=document.activeElement;return !!(a&&a.closest&&a.closest('#ob-list,#vn-list'))};
+function obRows(){const inV=notes3()&&obListFocus()&&document.activeElement.closest('#vn-list');return [...document.querySelectorAll(inV?'#vn-list [data-note],#vn-list [data-att],#vn-list [data-fall]':'#ob-list [data-note],#ob-list [data-folder],#ob-list [data-att]')].filter(r=>r.offsetParent)}
+const obSelOf=r=>{const d=r.dataset;return d.note?{type:'note',id:d.note}:d.folder!=null?{type:'folder',id:d.folder}:d.att?{type:'att',id:d.att}:d.fall&&d.fall!=='*'?{type:'folder',id:d.fall}:null};
+function obSelRow(){if(!obSel)return null;const e=CSS.escape(obSel.id),k=obSel.type;return document.querySelector(k==='folder'?`#ob-list [data-folder="${e}"],#vn-list [data-fall="${e}"]`:`#ob-list [data-${k}="${e}"],#vn-list [data-${k}="${e}"]`)}
+/* Dónde va lo que se pega o se suelta: la carpeta elegida, la de la nota elegida o la que se está viendo */
+function obTarget(){if(obSel){if(obSel.type==='folder')return obSel.id;const x=obSel.type==='note'?nget(obSel.id):S.atts.find(a=>a.id===obSel.id);if(x)return x.folder||''}return notes3()&&vlFolder()!=='*'?vlFolder():''}
+function obDelSel(){const s=obSel;if(!s)return;if(s.type==='note'){const n=nget(s.id);if(n)delNoteAsk(n)}else if(s.type==='folder')folderDelAsk(s.id);
+  else{const a=S.atts.find(x=>x.id===s.id);if(a)obConfirm('¿Eliminar "'+a.name+'"?','Eliminar',()=>{S.atts=S.atts.filter(x=>x!==a);delImg(a.id);fileDel(a.id);save();renderNotes()})}}
+function obCopy(cut){const s=obSel;if(!s)return;if(s.type==='folder'&&!cut){toast(T('Las carpetas se mueven con Ctrl+X y Ctrl+V'));return}
+  const x=s.type==='note'?nget(s.id):s.type==='att'?S.atts.find(a=>a.id===s.id):null,name=x?(x.title!=null?(x.title||T('Sin título')):x.name):baseName(s.id);
+  obClip={t:s.type,id:s.id,cut,text:s.type==='note'&&x?x.body:name};try{navigator.clipboard.writeText(obClip.text).catch(()=>{})}catch(e){}
+  toast((cut?T('Cortado'):T('Copiado'))+': «'+name+'» · '+T('Ctrl+V para pegar'))}
+function obPasteClip(){const c=obClip,f=obTarget();let id=null;
+  if(c.t==='note'){const n=nget(c.id);if(!n)return;if(c.cut){n.folder=f;n.updated=Date.now();obClip=null;id=n.id}else{const d=newNote(uniqueTitle(n.title||T('Sin título')),f,n.body);d.kind=n.kind;id=d.id}}
+  else if(c.t==='att'){const a=S.atts.find(x=>x.id===c.id);if(!a)return;if(c.cut){a.folder=f;obClip=null;id=a.id}
+    else{const b=Object.assign({},a,{id:'a'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:uniqAttName(a.name),folder:f,created:Date.now(),updated:Date.now()});
+      if(a.kind==='file'){const bl=FMEM[a.id];if(bl)filePut(b.id,bl);else fileGet(a.id).then(x=>{if(x)filePut(b.id,x)})}else{const d=getImg(a.id);if(d)setImg(b.id,d)}S.atts.push(b);id=b.id}}
+  else if(c.t==='folder'&&c.cut){if(f===c.id||f.startsWith(c.id+'/')){toast('No se puede mover una carpeta dentro de sí misma');return}const np=parentOf(c.id)===f?c.id:uniqueFolder((f?f+'/':'')+baseName(c.id));if(np!==c.id)renameFolder(c.id,np);obClip=null;S.obOpen[np]=true;obSel={type:'folder',id:np};save();renderNotes();return}
+  save();if(id)obFlash([id])}
+/* Resaltar lo nuevo, abrir su carpeta y dejarlo elegido */
+function obFlash(ids){const t=Date.now();ids.forEach(id=>obNew.set(id,t));const id0=ids[0],x=nget(id0)||S.atts.find(a=>a.id===id0);
+  if(x){obSel={type:x.title!=null?'note':'att',id:id0};let f=x.folder;while(f){S.obOpen[f]=true;f=parentOf(f)}if(notes3())S.obFolder=x.folder||''}
+  renderNotes();const e=CSS.escape(id0),r=document.querySelector(`#ob-list [data-note="${e}"],#vn-list [data-note="${e}"],#ob-list [data-att="${e}"],#vn-list [data-att="${e}"]`);if(r){r.scrollIntoView({block:'nearest'});r.focus({preventScroll:true})}
+  setTimeout(()=>{ids.forEach(id=>{if(obNew.get(id)===t)obNew.delete(id)});document.querySelectorAll('#ob-list .ob-new,#vn-list .ob-new').forEach(r=>{if(!obNew.has(r.dataset.note||r.dataset.att))r.classList.remove('ob-new')})},6000)}
+/* Archivos o texto que llegan de fuera (soltados o pegados): notas para el texto, adjuntos para lo demás. Un .json, .ics o .zip de Temvra se abre como siempre */
+async function obImport(files,text,folder){const ids=[];
+  await fsBatch(async()=>{for(const f of files){const e=extOf(f.name);
+      if(/\.(json|ics|zip)$/i.test(f.name)){try{await importBytes(f.name,f.type||'',new Uint8Array(await f.arrayBuffer()))}catch(err){}continue}
+      if(f.size>60*1048576){toast(f.name+': máximo 60 MB por archivo');continue}
+      if(['md','markdown','txt','canvas'].includes(e)){const n=newNote(uniqueTitle(f.name.replace(/\.(md|markdown|txt|canvas)$/i,'').trim()||T('Sin título')),folder,(await f.text()).replace(/\r\n?/g,'\n'));if(e==='canvas')n.kind='canvas';ids.push(n.id);continue}
+      if(/^image\/(png|jpe?g|webp|gif)/.test(f.type)){const d=await new Promise(r=>readImage(f,1600,r,()=>r(null)));if(!d)continue;const a=addAttachment(d,folder);a.name=uniqAttName((f.name||'imagen.png').replace(/\.(heic|png|webp|gif)$/i,'.jpg'));ids.push(a.id);continue}
+      const a={id:'a'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),kind:'file',name:uniqAttName(f.name||'archivo'),mime:f.type||EXT_MIME[e]||'application/octet-stream',size:f.size,folder,created:Date.now(),updated:Date.now()};
+      const ok=await filePut(a.id,f);S.atts.push(a);if(!ok)toast('El archivo se guardará mientras la app esté abierta');ids.push(a.id)}
+    if(text&&text.trim()){const n=newNote('',folder,text.replace(/\r\n?/g,'\n'));ids.push(n.id)}
+    save()});
+  if(!ids.length)return;obFlash(ids);toast(ids.length===1?T('Añadido a Notas'):ids.length+' '+T('elementos añadidos a Notas'))}
+document.addEventListener('keydown',e=>{if(e.altKey||!obKeysOn())return;const k=e.key,lk=k.toLowerCase(),mod=e.ctrlKey||e.metaKey;
+  if(mod&&lk==='z'&&!e.shiftKey){e.preventDefault();fsUndo();return}
+  if(mod&&(lk==='y'||(lk==='z'&&e.shiftKey))){e.preventDefault();fsRedo();return}
+  if(mod&&e.shiftKey&&lk==='n'){const b=$('ob-tools').querySelector('[data-tool=folder]');if(b){e.preventDefault();b.click()}return}
+  if(!obListFocus())return;
+  if(k==='ArrowDown'||k==='ArrowUp'){const L=obRows();if(!L.length)return;e.preventDefault();let i=L.indexOf(obSelRow()||document.activeElement);i=i<0?(k==='ArrowDown'?0:L.length-1):Math.max(0,Math.min(L.length-1,i+(k==='ArrowDown'?1:-1)));obSel=obSelOf(L[i]);L[i].focus();L[i].scrollIntoView({block:'nearest'});return}
+  if(!obSel)return;
+  if(k==='F2'){e.preventDefault();obRenaming=(obSel.type==='folder'?'f:':obSel.type==='note'?'n:':'a:')+obSel.id;renderNotes();return}
+  if(k==='Delete'){e.preventDefault();obDelSel();return}
+  if(mod&&(lk==='c'||lk==='x')&&!getSelection().toString()){e.preventDefault();obCopy(lk==='x')}});
+document.addEventListener('paste',e=>{if(!obKeysOn()||!obListFocus())return;const cd=e.clipboardData;if(!cd)return;const sys=cd.getData('text/plain')||'',files=[...(cd.files||[])];
+  if(obClip&&!files.length&&(!sys||sys===obClip.text)){e.preventDefault();obPasteClip();return}
+  if(files.length||sys.trim()){e.preventDefault();obImport(files,files.length?'':sys,obTarget())}});
+/* Un clic en un hueco vacío de la lista la deja elegida sin ninguna nota: así se puede pegar ahí */
+['ob-list','vn-list'].forEach(id=>{const L=$(id);L.tabIndex=-1;L.addEventListener('pointerdown',e=>{if(e.button>0||e.target.closest('[data-note],[data-folder],[data-att],[data-fall],[data-bm],[data-bmg],[data-tagrow],[data-prop],input,button,a,textarea,select'))return;obSel=null;L.focus({preventScroll:true})})});
+
+/* ===================== Arrastrar desde fuera y hacia fuera ===================== */
+/* Desde el explorador de archivos u otra app: la app pasa a Notas y lo soltado entra en la carpeta de debajo del puntero (o en la que se ve).
+   Soltado sobre la nota abierta, un archivo se adjunta en ella; el texto lo coloca el propio editor */
+let obSelfDrag=false,obDropT=0,obOut=null;
+document.addEventListener('dragstart',()=>{obSelfDrag=true},true);document.addEventListener('dragend',()=>{obSelfDrag=false},true);
+const obExtDrag=e=>{if(obSelfDrag||!e.dataTransfer)return false;const ty=[...e.dataTransfer.types];return ty.includes('Files')||ty.includes('text/plain')||ty.includes('text/uri-list')};
+function obDropAt(e){const el=document.elementFromPoint(e.clientX,e.clientY);if(el&&curNote&&!$('noteview').hidden&&el.closest('#noteview .ne-body'))return {where:'note'};
+  const r=el&&el.closest('#ob-list [data-folder],#vn-list [data-fall],#ob-list [data-note],#ob-list [data-att],#vn-list [data-note],#vn-list [data-att]');
+  if(r){const d=r.dataset;if(d.folder!=null)return {f:d.folder,el:r};if(d.fall!=null)return {f:d.fall==='*'?'':d.fall,el:r};const x=d.note?nget(d.note):S.atts.find(a=>a.id===d.att),f=x?x.folder||'':'';return {f,el:f?$('ob-list').querySelector(`[data-folder="${CSS.escape(f)}"]`):null}}
+  if(el&&el.closest('#vn-list'))return {f:notes3()&&vlFolder()!=='*'?vlFolder():'',el:null};return {f:obTarget(),el:null}}
+function obDropMark(tg){document.querySelectorAll('#ob-list .drop,#vn-list .drop').forEach(x=>x.classList.remove('drop'));if(tg&&tg.el)tg.el.classList.add('drop')}
+function obDropOff(){document.body.classList.remove('ob-dropping');obDropMark(null)}
+document.addEventListener('dragover',e=>{if(!obExtDrag(e))return;e.preventDefault();if(typeof view!=='undefined'&&view!=='notes'){show('notes');if(PHONE.matches&&curNote)closeNote()}
+  document.body.classList.add('ob-dropping');clearTimeout(obDropT);obDropT=setTimeout(obDropOff,200);const tg=obDropAt(e);if(tg.where==='note'){obDropMark(null);return}e.dataTransfer.dropEffect='copy';obDropMark(tg)});
+document.addEventListener('drop',e=>{if(!obExtDrag(e))return;const dt=e.dataTransfer,files=[...(dt.files||[])],tg=obDropAt(e);obDropOff();
+  if(tg.where==='note'){if(files.length){e.preventDefault();attachFiles(files)}return}
+  e.preventDefault();
+  /* Lo que se sacó arrastrando de la propia app y volvió a entrar no se duplica */
+  if(obOut&&Date.now()-obOut.t<60000&&files.length===1&&files[0].name===obOut.name){obOut=null;return}
+  const text=files.length?'':(dt.getData('text/plain')||dt.getData('text/uri-list')||'');if(files.length||text.trim())obImport(files,text,tg.f)});
+/* Hacia fuera (PC): una nota o un adjunto que se arrastra hasta salir de la ventana se convierte en un archivo de verdad (Nota.md, la imagen…)
+   que se puede soltar en el escritorio o en una carpeta */
+function obOutCheck(e){if(!drag||drag.out||!(window.VTDesktop&&VTDesktop.dragOut)||drag.t==='folder'||e.pointerType!=='mouse')return false;
+  if(e.clientX>2&&e.clientY>2&&e.clientX<innerWidth-2&&e.clientY<innerHeight-2)return false;const d=drag;d.out=true;obDragOut(d.t,d.id);endDrag(true);return true}
+async function obDragOut(t,id){let name,data;
+  if(t==='note'){const n=nget(id);if(!n)return;name=safeName(n.title)+(isCanvas(n)?'.canvas':'.md');data=new TextEncoder().encode(n.body)}
+  else{const a=S.atts.find(x=>x.id===id);if(!a)return;name=a.name;if(a.kind==='file'){const b=FMEM[a.id]||await fileGet(a.id);if(!b)return;data=new Uint8Array(await b.arrayBuffer())}else{const u=getImg(a.id);if(!u)return;data=b64bytes(u.split(',')[1]||'')}}
+  obOut={name,t:Date.now()};VTDesktop.dragOut(name,data)}
+
 /* Menú contextual (pulsación larga sin mover) */
 function ctxMenu(row){const d=row.dataset;
   if(d.note){noteCtx(nget(d.note));return}
@@ -7291,7 +7473,7 @@ $('iv-close').onclick=()=>{$('img-viewer').hidden=true;fvAtt=null;$('fv-body').i
 $('iv-del').onclick=()=>{const id=$('img-viewer').dataset.id,a=S.atts.find(x=>x.id===id);obConfirm('¿Eliminar "'+(a?a.name:'archivo')+'"?','Eliminar',()=>{S.atts=S.atts.filter(x=>x.id!==id);delImg(id);fileDel(id);save();$('img-viewer').hidden=true;renderNotes();if(curNote&&!neEdit)renderRead()})};
 function stamp(){const d=new Date();return d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+pad(d.getHours())+pad(d.getMinutes())+pad(d.getSeconds())}
 function addAttachment(dataUrl,folder){const a={id:'a'+Date.now().toString(36)+Math.random().toString(36).slice(2,4),name:'IMG'+stamp()+'.jpg',folder:folder||'',created:Date.now(),updated:Date.now()};setImg(a.id,dataUrl);S.atts.push(a);save();return a}
-function readImage(file,max,cb){const img=new Image(),url=URL.createObjectURL(file);img.onerror=()=>{toast('No se pudo abrir esa imagen');URL.revokeObjectURL(url)};
+function readImage(file,max,cb,err){const img=new Image(),url=URL.createObjectURL(file);img.onerror=()=>{toast('No se pudo abrir esa imagen');URL.revokeObjectURL(url);if(err)err()};
   img.onload=()=>{const sc=Math.min(1,max/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);cb(c.toDataURL('image/jpeg',.82))};img.src=url}
 
 /* --- Frontmatter (propiedades) --- */
@@ -7932,7 +8114,12 @@ setInterval(()=>{if(!$('settings').hidden)apBadge()},30000);
     if(VTDesktop.onWidget)VTDesktop.onWidget(a=>{if(a==='closed'){st();return}if(window.VTAPI)VTAPI.timerAction(a)});setTimeout(pushPulse,1500)}
   /* «Abrir con Temvra» en el PC: el archivo llega desde el proceso principal */
   if(window.VTDesktop&&VTDesktop.onFile)VTDesktop.onFile(x=>importIncoming(x));
-  if(window.VTDesktop&&VTDesktop.onLink)VTDesktop.onLink(u=>tvpFromLink(u))}
+  if(window.VTDesktop&&VTDesktop.onLink)VTDesktop.onLink(u=>tvpFromLink(u));
+  /* Zoom de la ventana (Ctrl+rueda, Ctrl + / − / 0): se enseña el porcentaje */
+  if(window.VTDesktop&&VTDesktop.onZoom)VTDesktop.onZoom(p=>toast(T('Zoom')+' '+p+' %'));
+  /* Ctrl+rueda (y el pellizco del panel táctil, que llega igual) se recoge aquí y va de paso en paso. La línea de tiempo, el día y el lienzo
+     ya lo usan para su propio zoom y lo marcan, así que ahí no cambia la ventana */
+  if(window.VTDesktop&&VTDesktop.zoom){let acc=0,at=0;document.addEventListener('wheel',e=>{if(!e.ctrlKey||e.defaultPrevented)return;e.preventDefault();const n=performance.now();if(n-at>400)acc=0;at=n;acc+=e.deltaY*(e.deltaMode===1?40:1);if(Math.abs(acc)>=90){VTDesktop.zoom(acc<0?1:-1);acc=0}},{passive:false})}}
 window.apDirty=apDirty;document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('[data-apsync]')){apEtag='';appSync('manual').then(()=>{const A=apA();toast(A&&A.err?'GitHub: '+A.err:'✔ Bóveda sincronizada')})}});new MutationObserver(()=>{if(!$('settings').hidden)apBadge()}).observe($('settings'),{attributes:true,attributeFilter:['hidden']});setTimeout(apBadge,0);
 /* Solo mira GitHub (ghPeek no crea el README en un repositorio vacío) y respeta .gitignore y lo que está fuera del push, como el panel */
 async function ghStatus(L){try{const rem=await ghPeek(L),base=L.base||{};let mod=[],nw=[],rm=[],un=[];const lp=new Set();
@@ -8081,7 +8268,7 @@ function openNote(id,edit,fromNav){
   neBody().scrollTop=0;if(neUp())requestAnimationFrame(()=>{neToBottom();setTimeout(neToBottom,60)});if(edit&&!curNote.title)setTimeout(()=>$('ne-title').focus(),60);
   setTimeout(()=>{renderDeskTabs();applyDesk();neDownBtn()},300);$('nb-tabn').textContent=openTabs.length;$('nb-back').disabled=navI<=0;$('nb-fwd').disabled=navI>=navH.length-1;
 }
-function setMode(e){neEdit=e;dayPend=null;$('ne-edit').hidden=!e;$('ne-read').hidden=e;$('ne-tools').hidden=!e;$('ob-bottom').hidden=e||!S.ob.bottomBar;
+function setMode(e){neEdit=e;dayPend=null;if(typeof nfOn==='function'&&nfOn())setTimeout(()=>nfRun(),40);$('ne-edit').hidden=!e;$('ne-read').hidden=e;$('ne-tools').hidden=!e;$('ob-bottom').hidden=e||!S.ob.bottomBar;
   $('ne-mode').innerHTML=e?I_READ:I_EDIT;$('ne-mode').setAttribute('aria-label',e?'Lectura':'Edición');$('ne-mode').title=e?'Lectura':'Edición';
   if(e){$('ne-text').value=curNote.body;dayAutoIns();autoGrow();edHL();if(neUp())requestAnimationFrame(neToBottom)}else{renderRead();if(neUp())requestAnimationFrame(neToBottom)}setTimeout(renderDeskTabs,0);renderNoteMeta();$('ne-sug').hidden=true;requestAnimationFrame(()=>{if(typeof neDownBtn==='function')neDownBtn()})}
 function propsHTML(p){const ks=Object.keys(p);if(!ks.length)return '';return `<div class="props"><div class="props-h">Propiedades</div>${ks.map(k=>{const v=p[k],t=propType(k,v);const val=Array.isArray(v)?v.map(x=>`<span class="pchip">${esc(x)}</span>`).join(''):(t==='checkbox'?`<input type="checkbox" disabled ${v==='true'?'checked':''}>`:esc(v));return `<div class="prow"><span class="pk">${PTYPE_IC[t]}${esc(k)}</span><span class="pv">${val}</span></div>`}).join('')}</div>`}
@@ -8097,7 +8284,9 @@ function renderNoteMeta(){
   $('ne-links').innerHTML=`<h3>Enlaces entrantes · ${bl.length}</h3>`+(bl.length?bl.map(o=>{const ln=o.body.split('\n').find(x=>x.includes('[['))||'';return `<button data-open="${o.id}">${esc(o.title||'Sin título')}<small>${esc(ln.replace(/[#>*-]/g,'').trim().slice(0,90))}</small></button>`}).join(''):'<span class="t2" style="margin:0">Sin enlaces todavía</span>')+
     `<h3>Enlaces salientes · ${out.length}</h3>`+(out.length?out.map(t=>{const ex=nfind(t);return `<button data-wl="${esc(t)}">${esc(t)}${ex?'':' <small style="display:inline">· +</small>'}</button>`}).join(''):'<span class="t2" style="margin:0">Sin enlaces todavía</span>');
 }
-function autoGrow(){const t=$('ne-text'),up=neUp();t.style.minHeight='0';t.style.height='auto';t._ch=t.scrollHeight;t.style.minHeight='';t.style.height=(up?Math.max(t.scrollHeight,40):Math.max(t.scrollHeight,window.innerHeight*.55))+'px'}
+/* Para medir, el área de texto se encoge un instante: el navegador recortaba entonces el desplazamiento de la nota y, al escribir en mitad
+   de una nota larga, todo saltaba hacia arriba y el cursor quedaba fuera de la pantalla. Se guarda y se repone */
+function autoGrow(){const t=$('ne-text'),up=neUp(),b=neBody(),st=b?b.scrollTop:0;t.style.minHeight='0';t.style.height='auto';t._ch=t.scrollHeight;t.style.minHeight='';t.style.height=(up?Math.max(t.scrollHeight,40):Math.max(t.scrollHeight,window.innerHeight*.55))+'px';if(b&&b.scrollTop!==st)b.scrollTop=st}
 const PHONE=matchMedia('(max-width:699px)');
 function neUp(){return S.ob.bottomUp!==false&&PHONE.matches}
 (PHONE.addEventListener?PHONE.addEventListener('change',()=>{applyObPrefs();if(curNote&&neEdit)autoGrow();neDownBtn()}):PHONE.addListener(()=>applyObPrefs()));
@@ -8116,7 +8305,7 @@ $('ne-title').addEventListener('input',e=>{if(!curNote)return;const old=curNote.
   neSaveT=setTimeout(()=>{if(old&&nw&&old!==nw&&S.ob.autoLinks)S.notes.forEach(o=>{if(o!==curNote&&o.body.includes('[['+old)){o.body=o.body.split('[['+old+']]').join('[['+nw+']]').split('[['+old+'|').join('[['+nw+'|').split('[['+old+'#').join('[['+nw+'#')}});save();renderNoteMeta();if(document.body.classList.contains('desknotes')&&S.obPanel==='files')renderNotes();renderDeskTabs()},500)});
 $('ne-title').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();setMode(true);$('ne-text').focus()}});
 $('ne-mode').onclick=()=>{if(neEdit)saveNote();setMode(!neEdit)};
-function closeNote(){if(curNote&&S.gh.token&&ghLink()){const a=S.ob.sync.auto||'both';if(a==='note'||a==='both'){clearTimeout(window._pushT);window._pushT=setTimeout(()=>autoSync('note'),1200)}else if(PL('sync')&&S.ob.sync.pushOnClose){clearTimeout(window._pushT);window._pushT=setTimeout(()=>ghPush(ghLink()),1500)}}leaveNote();$('noteview').hidden=true;curNote=null;const ve=$('v-notes');ve.classList.remove('slidein');void ve.offsetWidth;ve.classList.add('slidein');if(view==='notes')renderNotes();if(!$('dayview').hidden)renderDay();if(view==='cal')renderCal();applyDesk()}
+function closeNote(){if(typeof nfOn==='function')nfClose();if(curNote&&S.gh.token&&ghLink()){const a=S.ob.sync.auto||'both';if(a==='note'||a==='both'){clearTimeout(window._pushT);window._pushT=setTimeout(()=>autoSync('note'),1200)}else if(PL('sync')&&S.ob.sync.pushOnClose){clearTimeout(window._pushT);window._pushT=setTimeout(()=>ghPush(ghLink()),1500)}}leaveNote();$('noteview').hidden=true;curNote=null;const ve=$('v-notes');ve.classList.remove('slidein');void ve.offsetWidth;ve.classList.add('slidein');if(view==='notes')renderNotes();if(!$('dayview').hidden)renderDay();if(view==='cal')renderCal();applyDesk()}
 $('ne-close').onclick=closeNote;
 function readClick(e){
   if(e.target.closest('[data-qcnote]')){noteToPlan(curNote);return}
@@ -8234,7 +8423,20 @@ let edDown=null;$('ne-text').addEventListener('pointerdown',e=>{edDown={x:e.clie
 
 $('ne-down').onclick=neGoBottom;
 neBody().addEventListener('scroll',()=>{clearTimeout(window._ndT);window._ndT=setTimeout(neDownBtn,60)},{passive:true});
-$('ne-text').addEventListener('focus',()=>{if(neUp())setTimeout(neToBottom,250)});
+/* «Escribir desde abajo» lleva al final solo si se toca al final: al tocar en mitad del texto, la nota se movía lejos de donde se iba a escribir */
+$('ne-text').addEventListener('focus',()=>{setTimeout(()=>{const ta=TA();if(neUp()&&ta.value.length-ta.selectionEnd<80)neToBottom();else neCaret()},250)});
+/* Deja la línea del cursor a la vista, entre el principio de la nota y la barra de formato (que flota encima del teclado) */
+let neMir=null;
+function neCaret(){const ta=TA(),b=neBody();if(!b||!neEdit||document.activeElement!==ta)return;
+  const m=neMir||(neMir=document.createElement('div')),cs=getComputedStyle(ta);m.setAttribute('aria-hidden','true');
+  ['fontFamily','fontSize','fontWeight','fontStyle','lineHeight','letterSpacing','wordSpacing','tabSize','fontVariationSettings','paddingTop','paddingLeft','paddingRight','boxSizing'].forEach(k=>m.style[k]=cs[k]);
+  m.style.cssText+=';position:absolute;visibility:hidden;pointer-events:none;white-space:pre-wrap;overflow-wrap:break-word;left:0;top:0;width:'+ta.clientWidth+'px';
+  m.textContent=ta.value.slice(0,ta.selectionEnd);const s=document.createElement('span');s.textContent='\u200b';m.appendChild(s);ta.parentNode.appendChild(m);
+  const lh=parseFloat(cs.lineHeight)||24,y=ta.getBoundingClientRect().top+s.offsetTop;m.remove();
+  const tl=$('ne-tools'),bot=!tl.hidden&&getComputedStyle(tl).position==='fixed'?tl.getBoundingClientRect().top:Math.min(innerHeight,b.getBoundingClientRect().bottom),top=b.getBoundingClientRect().top;
+  if(y+lh>bot-10)b.scrollTop+=y+lh-(bot-10);else if(y<top+8)b.scrollTop-=top+8-y}
+/* Al abrirse o cerrarse el teclado cambia el alto de la ventana */
+{let t=0;addEventListener('resize',()=>{if(document.activeElement!==TA())return;clearTimeout(t);t=setTimeout(()=>{neCaret();setTimeout(neCaret,300)},80)})}
 $('ne-text').addEventListener('click',e=>{const ta=TA();if(ta.selectionStart!==ta.selectionEnd||(edDown&&Math.hypot(e.clientX-edDown.x,e.clientY-edDown.y)>8))return;
   const v=ta.value,c=ta.selectionStart,ls=v.lastIndexOf('\n',c-1)+1,m=v.slice(ls).match(/^(\s*[-*+] )\[( |x|X)\]/);if(!m)return;const st=ls+m[1].length;
   if(c>=st&&c<=st+3){const box=$('ne-hl').querySelector(`[data-cb="${st}"]`);if(box){const r=box.getBoundingClientRect();if(e.clientX<r.left-6||e.clientX>r.right+6)return}
@@ -8301,6 +8503,40 @@ $('ne-text').addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&!e.altKey&&e.key==='d'){e.preventDefault();edDate()}
 });
 $('ne-read').addEventListener('dblclick',()=>setMode(true));
+/* ===================== Buscar en la nota ===================== */
+/* La lupa de la nota (Ctrl+F en el PC) busca palabras sin distinguir mayúsculas ni acentos. En lectura se marcan en el texto; editando,
+   en una capa detrás del texto (como la de colores). Al cerrar editando, el cursor queda en la palabra que se estaba viendo */
+var nfHits=[],nfI=0,nfT=0;
+const nfFold=s=>{let o='';const m=[];for(let i=0;i<s.length;i++){const f=s[i].toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');for(let j=0;j<f.length;j++){o+=f[j];m.push(i)}}return [o,m]};
+function nfFind(text,q){const [F,M]=nfFold(text),Q=nfFold(q)[0],out=[];if(!Q.trim())return out;let k=F.indexOf(Q);while(k>=0&&out.length<5000){out.push([M[k],M[k+Q.length-1]+1]);k=F.indexOf(Q,k+Q.length)}return out}
+const nfOn=()=>!$('ne-find').hidden;
+function nfPaintRead(q){const root=$('ne-read');root.querySelectorAll('mark.nf').forEach(m=>m.replaceWith(document.createTextNode(m.textContent)));root.normalize();const marks=[];if(!q||!q.trim())return marks;
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.parentNode.closest('script,style,textarea')?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}),nodes=[];while(w.nextNode())nodes.push(w.currentNode);
+  nodes.forEach(n=>{const v=n.nodeValue,hs=nfFind(v,q);if(!hs.length)return;const fr=document.createDocumentFragment();let p=0;
+    hs.forEach(([s,e])=>{if(s>p)fr.appendChild(document.createTextNode(v.slice(p,s)));const m=document.createElement('mark');m.className='nf';m.textContent=v.slice(s,e);fr.appendChild(m);marks.push(m);p=e});if(p<v.length)fr.appendChild(document.createTextNode(v.slice(p)));n.replaceWith(fr)});return marks}
+function nfPaintEdit(){const el=$('ne-fhl');if(!el)return;el.classList.toggle('mono',$('ne-hl').classList.contains('mono'));if(!nfOn()||!neEdit||!nfHits.length){el.innerHTML='';return}
+  const v=TA().value;let h='',p=0;nfHits.forEach(([s,e],i)=>{h+=esc(v.slice(p,s))+`<mark${i===nfI?' class="on"':''}>${esc(v.slice(s,e))}</mark>`;p=e});el.innerHTML=h+esc(v.slice(p))+'\n\u200b'}
+/* Lleva el resultado al centro de lo que se ve, sin quedar debajo de la barra de formato */
+function nfScroll(el){const b=neBody(),r=el.getBoundingClientRect(),br=b.getBoundingClientRect(),tl=$('ne-tools'),bot=!tl.hidden&&getComputedStyle(tl).position==='fixed'?Math.min(br.bottom,tl.getBoundingClientRect().top):br.bottom;
+  if(r.top<br.top+16||r.bottom>bot-16)b.scrollTop+=r.top+r.height/2-(br.top+bot)/2}
+function nfShow(scroll){const n=nfHits.length,q=$('nf-in').value.trim();$('nf-n').textContent=!q?'':n?(nfI+1)+'/'+n:T('Sin resultados');$('ne-find').classList.toggle('none',!!q&&!n);$('nf-prev').disabled=$('nf-next').disabled=n<2;
+  if(neEdit){nfPaintEdit();const m=$('ne-fhl').querySelector('mark.on');if(m&&scroll)nfScroll(m)}else{nfHits.forEach((m,i)=>m.classList.toggle('on',i===nfI));if(nfHits[nfI]&&scroll)nfScroll(nfHits[nfI])}}
+function nfRun(keep,noScroll){if(!nfOn()||!curNote)return;const q=$('nf-in').value;if(neEdit)nfHits=nfFind(TA().value,q);else nfHits=nfPaintRead(q);
+  if(!keep)nfI=0;if(nfI>=nfHits.length)nfI=Math.max(0,nfHits.length-1);nfShow(!noScroll)}
+function nfStep(d){const n=nfHits.length;if(!n)return;nfI=(nfI+d+n)%n;nfShow(true)}
+function nfOpen(){if(!curNote||$('noteview').hidden)return false;const inp=$('nf-in'),ta=TA(),sel=neEdit&&document.activeElement===ta?ta.value.slice(ta.selectionStart,ta.selectionEnd):String(getSelection()||'');
+  if(sel.trim()&&sel.length<80&&!sel.includes('\n'))inp.value=sel.trim();$('ne-find').hidden=false;$('ne-find-b').classList.add('linked');inp.focus();inp.select();nfRun();return true}
+function nfClose(){if(!nfOn())return;const h=neEdit&&nfHits[nfI];$('ne-find').hidden=true;$('ne-find-b').classList.remove('linked');$('ne-fhl').innerHTML='';nfHits=[];if(!neEdit)nfPaintRead('');
+  if(h&&curNote){const ta=TA();ta.focus({preventScroll:true});ta.setSelectionRange(h[0],h[1]);setTimeout(neCaret,30)}}
+$('ne-find-b').onclick=()=>{nfOn()?nfClose():nfOpen()};
+$('nf-in').addEventListener('input',()=>{clearTimeout(nfT);nfT=setTimeout(()=>nfRun(),120)});
+$('nf-in').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();nfStep(e.shiftKey?-1:1)}else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='f'){e.preventDefault();e.stopPropagation();$('nf-in').select()}});
+$('nf-prev').onclick=()=>nfStep(-1);$('nf-next').onclick=()=>nfStep(1);$('nf-x').onclick=nfClose;
+/* Esc cierra la búsqueda y no la nota (el Esc general va en la captura del documento; esto va antes, en la de la ventana) */
+addEventListener('keydown',e=>{if(e.key==='Escape'&&nfOn()&&!$('noteview').hidden&&!document.querySelector('.sheet-back:not([hidden])')){e.preventDefault();e.stopImmediatePropagation();nfClose()}},true);
+/* Con la búsqueda abierta, escribir en la nota rehace los resultados sin mover la vista */
+$('ne-text').addEventListener('input',()=>{if(nfOn()){clearTimeout(nfT);nfT=setTimeout(()=>nfRun(true,true),200)}});
+
 
 /* Opciones de nota */
 const NTPL={'Diario':()=>`## ${new Date().toLocaleDateString(LOC,{weekday:'long',day:'numeric',month:'long'})}\n\n### Tareas\n- [ ] \n\n### Notas\n`,
@@ -8541,6 +8777,8 @@ function COMMANDS(){const n=curNote,c=[];const add=(t,run,need,hk)=>c.push({t,ru
   if(PL('canvas'))add('Canvas: añadir imagen libre a la nota',addFreeImage,'note');
   if(PL('sync')&&S.gh.token&&ghLink()){add('GitHub: subir (push)',()=>ghPush(ghLink()));add('GitHub: bajar (pull)',()=>ghPull(ghLink()))}
   if(PL('git'))add('GitHub: abrir terminal',openGh);
+  add('Nota: buscar palabras',nfOpen,'note','Ctrl+F');add('Archivos: deshacer el último cambio',fsUndo,null,'Ctrl+Z');add('Archivos: rehacer',fsRedo,null,'Ctrl+Y');
+  if(window.VTDesktop&&VTDesktop.zoom){add('Ventana: aumentar el zoom',()=>VTDesktop.zoom(1),null,'Ctrl + +');add('Ventana: reducir el zoom',()=>VTDesktop.zoom(-1),null,'Ctrl + −');add('Ventana: zoom al 100 %',()=>VTDesktop.zoom(0),null,'Ctrl+0')}
   add('Abrir preferencias',openPrefs,null,'Ctrl+,');
   return c.filter(x=>!x.need||n)}
 function renderQS(){qsSel=0;const q=norm($('qs-in').value.trim());let h='';
@@ -8610,7 +8848,7 @@ const PAGES={
   interface:{t:'Interfaz',items:[{k:'inlineTitle',type:'toggle',t:'Mostrar título en línea',d:'Muestra el nombre de la nota como título grande y editable.'},{k:'bottomBar',type:'toggle',t:'Barra de navegación inferior',d:'Atrás, adelante, buscar, nueva nota, pestañas y comandos.'},{k:'openMode',type:'select',t:'Vista al abrir una nota',opts:[['auto','Automática'],['read','Lectura'],['edit','Edición']]}]},
   editor:{t:'Editor',items:[{k:'bottomUp',type:'toggle',t:'Escribir desde abajo (como WhatsApp)',d:'Solo en el móvil: lo último que escribes queda abajo, junto al teclado. En tablet y ordenador sale una flecha para bajar al final.'},{k:'spell',type:'toggle',t:'Revisión ortográfica'},{k:'smartLists',type:'toggle',t:'Listas inteligentes',d:'Continúa listas, tareas y citas al pulsar Intro.'},{k:'autoPair',type:'toggle',t:'Emparejar corchetes y comillas',d:'Cierra automáticamente ( [ { " ` y la selección queda envuelta.'},{k:'tabSize',type:'select',t:'Tamaño de la sangría',opts:[[2,'2 espacios'],[4,'4 espacios']]}]},
   files:{t:'Archivos y enlaces',items:[{k:'newLoc',type:'select',t:'Ubicación de las notas nuevas',d:'Si has tocado una carpeta antes, la nota se crea dentro de ella.',opts:[['root','Raíz de la bóveda'],['current','Misma carpeta que la nota abierta'],['folder','Carpeta indicada abajo']]},{k:'newFolder',type:'text',t:'Carpeta para notas nuevas',ph:'Bandeja'},{k:'attLoc',type:'select',t:'Ubicación de los adjuntos',opts:[['root','Raíz de la bóveda'],['note','Misma carpeta que la nota'],['folder','Carpeta indicada abajo']]},{k:'attFolder',type:'text',t:'Carpeta de adjuntos',ph:'Adjuntos'},{k:'autoLinks',type:'toggle',t:'Actualizar enlaces internos',d:'Al renombrar una nota se cambian los [[enlaces]] que apuntan a ella.'},{k:'confirmDel',type:'toggle',t:'Confirmar antes de eliminar'},{k:'trash',type:'toggle',t:'Mover a la papelera al eliminar',d:'Podrás restaurar las notas desde Recuperación de archivos.'}]},
-  hotkeys:{t:'Atajos de teclado',items:[{type:'keys',list:[['Paleta de comandos','Ctrl+P'],['Selector rápido','Ctrl+O'],['Buscar en todas las notas','Ctrl+Shift+F'],['Nota nueva','Ctrl+N'],['Alternar lectura / edición','Ctrl+E'],['Negrita','Ctrl+B'],['Cursiva','Ctrl+I'],['Sangría','Tab'],['Abrir preferencias','Ctrl+,']]}]},
+  hotkeys:{t:'Atajos de teclado',items:[{type:'keys',list:[['Paleta de comandos','Ctrl+P'],['Selector rápido','Ctrl+O'],['Buscar en la nota','Ctrl+F'],['Buscar en todas las notas','Ctrl+Shift+F'],['Nota nueva','Ctrl+N'],['Alternar lectura / edición','Ctrl+E'],['Negrita','Ctrl+B'],['Cursiva','Ctrl+I'],['Sangría','Tab'],['Fecha de hoy','Ctrl+D'],['Abrir preferencias','Ctrl+,']]},{type:'keys',t:'Lista de notas y carpetas',list:[['Deshacer lo hecho con notas y carpetas','Ctrl+Z'],['Rehacer','Ctrl+Y'],['Moverse por la lista','↑ ↓'],['Abrir','Intro'],['Renombrar','F2'],['Borrar','Supr'],['Copiar, cortar y pegar','Ctrl+C · Ctrl+X · Ctrl+V'],['Pegar texto o archivos como nota nueva','Clic en un hueco y Ctrl+V'],['Carpeta nueva','Ctrl+Mayús+N']]},{type:'keys',t:'Ventana (PC)',list:[['Zoom','Ctrl + rueda · Ctrl + / −'],['Zoom al 100 %','Ctrl+0']]}]},
   keychain:{t:'Llavero',items:[{type:'keychain'}]},
   core:{t:'Complementos principales',items:[{type:'plugins'}]},
   community:{t:'Complementos comunitarios',items:[{type:'nav',t:'Git',page:'git'}]},
@@ -8639,7 +8877,7 @@ function itemHTML(it,i){const v=it.k?getP(it.k):null;
   if(it.type==='info')return `<div class="obp-info">${it.html}</div>`;
   if(it.type==='button')return `<button class="obp-row obp-btn" data-run="${i}"><span class="obp-t">${esc(it.t)}${it.d?`<small>${esc(it.d)}</small>`:''}</span><span class="obp-ch">${OB_IC.right}</span></button>`;
   if(it.type==='nav')return prefRow(it.page,it.t,PREF_IC[it.page]);
-  if(it.type==='keys')return it.list.map(([a,b])=>`<div class="obp-set"><span class="obp-t">${esc(a)}</span><kbd>${b}</kbd></div>`).join('');
+  if(it.type==='keys')return (it.t?`<div class="obp-sec">${esc(it.t)}</div>`:'')+it.list.map(([a,b])=>`<div class="obp-set"><span class="obp-t">${esc(a)}</span><kbd>${b}</kbd></div>`).join('');
   if(it.type==='plugins')return `<div class="vp-plugs">${PLUGINS.map(([k,t,d])=>`<div class="vp-plug${PL(k)?' on':''}" style="--pc:${PCOL[k]}"><button class="vp-plug-main" data-page="${k}">${ptile(k,true)}<span class="obp-t">${esc(t)}<small>${esc(d)}</small></span></button><button class="switch" role="switch" aria-checked="${PL(k)}" data-plug="${k}" aria-label="${esc(t)}"></button></div>`).join('')}</div>`;
   if(it.type==='keychain'){const tk=S.gh.token;return `<div class="obp-set"><span class="obp-ic">${PREF_IC.git}</span><span class="obp-t">GitHub · token<small>${tk?(S.gh.login?'@'+esc(S.gh.login)+' · ':'')+'••••••••'+esc(tk.slice(-4)):'Sin guardar'}</small></span>${tk?'<button class="btn tonal" data-kc="del">Eliminar</button>':'<button class="btn tonal" data-kc="add">Añadir</button>'}</div><div class="obp-info"><p>El llavero guarda las claves que usan los complementos. Solo existen en este dispositivo.</p></div>`}
   let ctl='';
@@ -8680,7 +8918,8 @@ $('obp-body').addEventListener('input',e=>{if(e.target.type==='range'){const o=e
 /* Atajos de teclado globales en Notas */
 document.addEventListener('keydown',e=>{if(!(e.ctrlKey||e.metaKey))return;const inNotes=view==='notes'||!$('noteview').hidden&&!document.body.classList.contains('desk');if(!inNotes)return;const k=e.key.toLowerCase();
   if(k==='p'&&PL('palette')){e.preventDefault();openQS('cmd')}else if(k==='o'&&PL('switcher')){e.preventDefault();openQS('note')}
-  else if(k==='f'&&e.shiftKey){e.preventDefault();COMMANDS().find(c=>c.t.startsWith('Buscar')).run()}else if(k==='n'&&!document.body.classList.contains('desknotes')){e.preventDefault();const x=newNote(uniqueTitle('Sin título'),newNoteFolder());openNote(x.id,true)}else if(k===','){e.preventDefault();openPrefs()}});
+  else if(k==='f'&&e.shiftKey){e.preventDefault();COMMANDS().find(c=>c.t.startsWith('Buscar')).run()}
+  else if(k==='f'){e.preventDefault();if(!nfOpen())COMMANDS().find(c=>c.t.startsWith('Buscar')).run()}else if(k==='n'&&!document.body.classList.contains('desknotes')){e.preventDefault();const x=newNote(uniqueTitle('Sin título'),newNoteFolder());openNote(x.id,true)}else if(k===','){e.preventDefault();openPrefs()}});
 
 const HELP_NOTE=`# Ayuda de Temvra Notas
 
@@ -9144,9 +9383,42 @@ let regCur=null,regT=0,regFn=null;
 const today=()=>dk(new Date());
 const regDayTxt=k=>{const d=fromKey(k);return REG_DAY[d.getDay()]+' '+d.getDate()+(k.slice(0,7)===today().slice(0,7)?'':' '+d.toLocaleDateString(LOC,{month:'short'}).replace('.',''))};
 const blankRow=(r,d)=>({d,t:'',c:r.cols.map(()=>'')});
-/* Hoy siempre tiene una fila (auto). No se rellenan los días sin abrir la app, y al cambiar de día se quitan las filas auto de días anteriores que quedaron vacías */
+/* Cada día, hoy tiene una fila (auto). No se rellenan los días sin abrir la app, y al cambiar de día se quitan las filas auto de días anteriores que quedaron vacías.
+   Con repetición (r.rep, ver regDue) la fila sale solo los días elegidos, también los que pasaron sin abrir la app (como mucho dos meses atrás),
+   y se queda aunque esté vacía: es un día que tocaba */
 function ensureRegs(){const t=today();S.regs.forEach(r=>{if(r.kind==='diary'){r.days=r.days||{};if(!r.days[t])r.days[t]={text:'',tables:[]};return}
-  r.rows=r.rows||[];if(r.rows.some(x=>x.d===t))return;r.rows=r.rows.filter(x=>!(x.auto&&x.d<t&&rowEmpty(x)&&!x.t));r.rows.push(Object.assign(blankRow(r,t),{auto:1}));r.rows.sort((a,b)=>a.d.localeCompare(b.d))})}
+  r.rows=r.rows||[];const R=r.rep,old=x=>x.auto&&x.d<t&&rowEmpty(x)&&!x.t;
+  if(R&&(R.w||R.m)){let k=R.last?addDays(R.last,1):(R.since||t),add=false;const min=addDays(t,-62);if(k<min)k=min;
+    for(;k<=t;k=addDays(k,1))if(regDue(r,k)&&!r.rows.some(x=>x.d===k)){r.rows.push(Object.assign(blankRow(r,k),{auto:1,rep:1}));add=true}
+    if(R.last!==t)R.last=t;r.rows=r.rows.filter(x=>x.rep||!old(x));if(add)r.rows.sort((a,b)=>a.d.localeCompare(b.d));return}
+  if(R&&R.off){r.rows=r.rows.filter(x=>!old(x));return}
+  if(r.rows.some(x=>x.d===t))return;r.rows=r.rows.filter(x=>!old(x));r.rows.push(Object.assign(blankRow(r,t),{auto:1}));r.rows.sort((a,b)=>a.d.localeCompare(b.d))})}
+/* Qué días sale sola una fila (r.rep): sin r.rep, cada día; {w:[días]} días de la semana (0 = domingo); {m:[números]} días del mes,
+   los mismos en todos los meses (el 31 en un mes de 30 días cae en el 30); {off:1} solo a mano */
+function regDue(r,k){const R=r.rep;if(!R)return true;if(R.off)return false;const d=fromKey(k);if(R.w)return R.w.includes(d.getDay());
+  if(R.m){const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();return R.m.some(x=>Math.min(x,last)===d.getDate())}return true}
+const wkName=(d,f)=>new Intl.DateTimeFormat(LOC,{weekday:f||'short'}).format(new Date(2024,0,7+d)).replace('.','');
+function repLabel(r){const R=r.rep;if(!R)return T('Cada día');if(R.off)return T('Solo a mano');
+  if(R.w){const o=[1,2,3,4,5,6,0].filter(d=>R.w.includes(d));return o.length===7?T('Cada día'):o.join()==='1,2,3,4,5'?T('De lunes a viernes'):o.map(d=>wkName(d)).join(', ')}
+  const m=R.m.slice().sort((a,b)=>a-b);return (m.length===1?T('Día'):T('Días'))+' '+m.join(', ')}
+function regNextDue(r){let k=addDays(today(),1);for(let i=0;i<400;i++,k=addDays(k,1))if(regDue(r,k))return k;return null}
+/* Hoja para elegirlo: cada día, días de la semana, días del mes (una cuadrícula del 1 al 31) o solo a mano */
+function openRegRep(r){const R=r.rep||{};let mode=R.off?'off':R.w?'w':R.m?'m':'day',w=(R.w||[]).slice(),m=(R.m||[]).slice();const t0=fromKey(today());
+  $('obs-title').innerHTML=esc(T('Repetir filas'))+`<small class="obs-sub">${esc(r.name)} · ${esc(T('qué días aparece sola una fila para apuntar'))}</small>`;$('obs-title').hidden=false;$('ob-sheet').classList.add('ctx');
+  const draw=()=>{const nx=mode==='off'||(mode==='w'&&!w.length)||(mode==='m'&&!m.length)?null:regNextDue({rep:mode==='day'?null:mode==='w'?{w}:{m}});
+    $('obs-body').innerHTML=`<div class="obg">${[['day','Cada día'],['w','Días de la semana'],['m','Días del mes'],['off','Solo a mano']].map(([k,x])=>`<button data-rmode="${k}"><span class="obg-t">${esc(T(x))}</span>${mode===k?`<span class="obg-ck">${OB_IC.check}</span>`:''}</button>`).join('')}</div>`+
+      (mode==='w'?`<div class="obg rep-pick"><div class="rep-days">${[1,2,3,4,5,6,0].map(d=>`<button type="button" data-rw="${d}" aria-pressed="${w.includes(d)}" aria-label="${esc(wkName(d,'long'))}">${DAYN[d]}</button>`).join('')}</div></div>`:'')+
+      (mode==='m'?`<div class="obg rep-pick"><div class="rep-days rep-month">${Array.from({length:31},(_,i)=>`<button type="button" data-rm="${i+1}" aria-pressed="${m.includes(i+1)}">${i+1}</button>`).join('')}</div><small class="rep-note">${esc(T('Se repite ese día en todos los meses. Si un mes no tiene el 29, 30 o 31, la fila va a su último día.'))}</small></div>`:'')+
+      `<div class="obg"><button id="rep-ok"><span class="obg-t" style="color:var(--accent)">${esc(T('Guardar'))}${nx?`<small>${esc(T('Próxima fila:'))} ${esc(fromKey(nx).toLocaleDateString(LOC,{weekday:'long',day:'numeric',month:'long'}))}</small>`:''}</span></button></div>`};
+  $('obs-body').onclick=e=>{const b=e.target.closest('[data-rmode]');if(b){mode=b.dataset.rmode;if(mode==='w'&&!w.length)w=[t0.getDay()];if(mode==='m'&&!m.length)m=[t0.getDate()];draw();return}
+    const x=e.target.closest('[data-rw]');if(x){const d=+x.dataset.rw;w=w.includes(d)?w.filter(y=>y!==d):w.concat(d);draw();return}
+    const y=e.target.closest('[data-rm]');if(y){const n=+y.dataset.rm;m=m.includes(n)?m.filter(z=>z!==n):m.concat(n);draw();return}
+    if(e.target.closest('#rep-ok')){if(mode==='w'&&!w.length||mode==='m'&&!m.length){toast(T('Elige al menos un día'));return}const t=today();
+      if(mode==='day')delete r.rep;else r.rep=mode==='off'?{off:1}:Object.assign({since:t},mode==='w'?{w:w.sort()}:{m:m.sort((a,b)=>a-b)});
+      /* Hoy pierde su fila automática si ya no toca y sigue vacía */
+      r.rows=r.rows.filter(x=>!(x.auto&&x.d===t&&rowEmpty(x)&&!x.t&&!regDue(r,t)));
+      $('ob-sheet').hidden=true;$('ob-sheet').classList.remove('ctx');saveReg(r);renderRegs();toast(T('Filas')+': '+repLabel(r))}};
+  draw();const was=!$('ob-sheet').hidden;$('ob-sheet').hidden=false;if(!was)$('ob-sheet').querySelector('.sheet').scrollTop=0}
 function ensureDiary(){if(!S.noDiary&&!S.regs.some(r=>r.kind==='diary'))S.regs.unshift({id:'diario',kind:'diary',name:'Diario',tag:'diario',type:'diario',color:'#7c6cf6',icon:'📔',days:{}})}
 /* /[carpeta] o /a/b/[carpeta] dentro del texto: la carpeta se crea y queda enlazada */
 const FOLD_RE=/\/((?:[^\/\s\[\]]+\/)*)\[([^\]\n]+)\]/g;
@@ -9202,10 +9474,11 @@ function shareReg(r){if(r.kind==='diary'){const t=Object.keys(r.days).sort().map
 function deleteReg(r){obConfirm('¿Eliminar «'+r.name+'»? La nota acumulada se conserva.','Eliminar',()=>{if(r.kind==='diary'&&S.regs.filter(x=>x.kind==='diary').length===1)S.noDiary=true;S.regs=S.regs.filter(x=>x!==r);if(regCur===r.id)regCur=null;save();renderRegs();if(!$('reg-drawer').hidden)openRegDrawer();if(typeof pushWidgets==='function')pushWidgets()})}
 function duplicateReg(r){const c=JSON.parse(JSON.stringify(r));c.id='r'+Date.now().toString(36);c.name=r.name+' (copia)';c.tag='';c.sess={};S.regs.splice(S.regs.indexOf(r)+1,0,c);regCur=c.id;save();renderRegs();if(!$('reg-drawer').hidden)openRegDrawer();if(typeof pushWidgets==='function')pushWidgets();toast('Duplicado')}
 /* El mismo menú con ⋮, con pulsación larga y desde el cajón o el mapa. Guardar la etiqueta vacía la quita */
-function regMenu(r){const upd=()=>{saveReg(r);renderRegs();if(!$('reg-drawer').hidden)openRegDrawer()};obSheet(r.name,[{t:'Etiqueta',s:r.tag?'#'+r.tag:'Sin etiqueta',ic:MIC('<path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>')},{t:'Color',ic:`<span class="tx-sw" style="background:${r.color||'var(--accent)'}"></span>`},{t:'Duplicar',ic:autoIc('Duplicar')},{t:'Compartir',ic:autoIc('Compartir')},{t:'Eliminar registro',danger:true,sep:true,ic:autoIc('Eliminar')}],i=>{
+function regMenu(r){const upd=()=>{saveReg(r);renderRegs();if(!$('reg-drawer').hidden)openRegDrawer()};obSheet(r.name,[{t:'Etiqueta',s:r.tag?'#'+r.tag:'Sin etiqueta',k:0,ic:MIC('<path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>')},{t:'Color',k:1,ic:`<span class="tx-sw" style="background:${r.color||'var(--accent)'}"></span>`},...(r.kind==='diary'?[]:[{t:'Repetir filas',s:repLabel(r),k:5,ic:MI.cal}]),{t:'Duplicar',k:2,ic:autoIc('Duplicar')},{t:'Compartir',k:3,ic:autoIc('Compartir')},{t:'Eliminar registro',danger:true,sep:true,k:4,ic:autoIc('Eliminar')}],(_,__,it)=>{const i=it?it.k:-1;
+    if(i===5){openRegRep(r);return}
     if(i===0){askName('Etiqueta',r.tag||'',v=>{r.tag=v.trim().replace(/^#/,'');upd()});$('ask-in').placeholder='Sin etiqueta';const ok=$('obs-body').onclick;$('obs-body').onclick=e=>{if(e.target.closest('#ask-ok')&&!$('ask-in').value.trim()){$('ob-sheet').hidden=true;r.tag='';upd();return}ok(e)}}
-    else if(i===1)pickColor('Color',r.color,c=>{r.color=c;upd()});else if(i===2)duplicateReg(r);else if(i===3)shareReg(r);else deleteReg(r)})}
-function delRegRow(r,T,i){const x=T.rows[i],old=JSON.parse(JSON.stringify(x)),keep=(x.d?T.rows.filter(y=>y.d===x.d).length:T.rows.length)<=1;if(keep)x.c=x.c.map(()=>'');else T.rows.splice(i,1);saveReg(r);renderRegs();
+    else if(i===1)pickColor('Color',r.color,c=>{r.color=c;upd()});else if(i===2)duplicateReg(r);else if(i===3)shareReg(r);else if(i===4)deleteReg(r)})}
+function delRegRow(r,T,i){const x=T.rows[i],old=JSON.parse(JSON.stringify(x)),keep=x.d?T===r&&regDue(r,x.d)&&T.rows.filter(y=>y.d===x.d).length<=1:T.rows.length<=1;if(keep)x.c=x.c.map(()=>'');else T.rows.splice(i,1);saveReg(r);renderRegs();
   if(rowEmpty(old)){if(keep)toast(x.d?'Cada día conserva al menos una fila':'La tabla conserva al menos una fila');return}regUndo(r,keep?'Fila vaciada':'Fila eliminada',()=>{if(keep)x.c=old.c;else T.rows.splice(Math.min(i,T.rows.length),0,old)})}
 /* Aviso con «Deshacer» durante 5 s */
 function regUndo(r,m,fn){toast(m,()=>{fn();saveReg(r);renderRegs();toast('Deshecho')})}
@@ -9247,7 +9520,7 @@ function renderReg(r){const B=$('v-reg'),head=`<div class="reg-head"><input clas
     const sw=`<div class="reg-actsw"><div><b>${T('Actividad del día')}</b><small>${S.actOff?T('Desactivada: no se apunta lo que haces'):T('Lo que haces en Notas, Agenda y Time, solo en este dispositivo')}</small></div><button class="switch" role="switch" data-actsw aria-checked="${!S.actOff}" aria-label="${T('Actividad del día')}"></button></div>`;
     B.innerHTML=head+sw+days.map(d=>{const e=r.days[d]||{text:'',tables:[]},fs=[...new Set(regFoldersPeek(e.text))];return `<div class="reg-day${d===today()?' today':''}" data-d="${d}"><h3>${esc(fromKey(d).toLocaleDateString(LOC,{weekday:'long',day:'numeric',month:'long'}))}</h3><textarea data-dtext placeholder="Escribe aquí. Usa /[carpeta] o /a/b/[carpeta] para enlazar carpetas.">${esc(e.text||'')}</textarea>${fs.length?`<div class="reg-chips">${fs.map(f=>`<button data-folder-go="${esc(f)}">📁 ${esc(f)}</button>`).join('')}</div>`:''}${(e.tables||[]).map((t,k)=>tableHTML(t,{key:'dt|'+d+'|'+k})+`<div class="reg-acts"><button class="btn tonal" data-trow="${d}|${k}">+ Fila</button><button class="btn tonal" data-tcolor="${d}|${k}">Color</button><button class="btn tonal" data-tmenu="${d}|${k}" aria-label="Opciones de la tabla"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>`).join('')}<div class="reg-acts"><button class="btn tonal" data-tnew="${d}">+ Tabla</button></div>${d===today()?habTodayHTML():''}${actHTML(d,acts[d])}</div>`}).join('');return}
   const fs=[...new Set(r.rows.flatMap(x=>x.c.flatMap(regFoldersPeek)))];
-  B.innerHTML=head+`<div class="t2" style="margin:0 2px 6px">${r.goal?esc(r.goal)+' · ':''}${r.tag?'#'+esc(r.tag):'Sin etiqueta'}</div>`+tableHTML(r,{key:'reg',byDay:true})+(fs.length?`<div class="reg-chips">${fs.map(f=>`<button data-folder-go="${esc(f)}">📁 ${esc(f)}</button>`).join('')}</div>`:'')+`<div class="reg-acts"><button class="btn" data-addrow>+ Fila hoy</button>${(REG_TYPES[r.type]||{}).noBlock?'':'<button class="btn tonal" data-sess>Pasar a la línea de tiempo</button>'}${r.tag?'<button class="btn tonal" data-tagnote>Nota acumulada</button>':''}</div>`;
+  B.innerHTML=head+`<div class="t2" style="margin:0 2px 6px">${r.goal?esc(r.goal)+' · ':''}${r.tag?'#'+esc(r.tag):'Sin etiqueta'}</div>`+tableHTML(r,{key:'reg',byDay:true})+(fs.length?`<div class="reg-chips">${fs.map(f=>`<button data-folder-go="${esc(f)}">📁 ${esc(f)}</button>`).join('')}</div>`:'')+`<div class="reg-acts"><button class="btn" data-addrow>+ Fila hoy</button><button class="btn tonal rep-btn" data-reprow title="${esc(T('Repetir filas'))}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>${esc(repLabel(r))}</button>${(REG_TYPES[r.type]||{}).noBlock?'':'<button class="btn tonal" data-sess>Pasar a la línea de tiempo</button>'}${r.tag?'<button class="btn tonal" data-tagnote>Nota acumulada</button>':''}</div>`;
   const w=B.querySelector('.reg-wrap');if(w)requestAnimationFrame(()=>{w.scrollTop=w.scrollHeight})}
 /* Actividad agrupada por día, de la mañana a la noche; cada línea abre lo que se tocó si todavía existe */
 function actByDay(){const m={};if(S.actOff)return m;S.log.forEach(l=>{const k=dk(new Date(l.at));(m[k]=m[k]||[]).push(l)});Object.values(m).forEach(a=>a.reverse());return m}
@@ -9342,7 +9615,7 @@ $('v-reg').addEventListener('click',e=>{const t=e.target,g=s=>t.closest(s);const
   if(g('#reg-add')){openRegWizard({});return}
   const r=S.regs.find(x=>x.id===regCur);if(!r)return;const fo=g('[data-folder-go]');if(fo){S.obOpen[fo.dataset.folderGo]=true;show('notes');renderNotes();return}
   if(g('[data-rmenu]')){regMenu(r);return}
-  if(g('[data-addrow]')){r.rows.push(blankRow(r,today()));saveReg(r);renderRegs();return}if(g('[data-sess]')){regSessionAsk(r);return}
+  if(g('[data-addrow]')){r.rows.push(blankRow(r,today()));saveReg(r);renderRegs();return}if(g('[data-reprow]')){openRegRep(r);return}if(g('[data-sess]')){regSessionAsk(r);return}
   if(g('[data-tagnote]')){syncTagNote(r.tag);const n=S.notes.find(x=>x.regTag===r.tag);if(n){show('notes');openNote(n.id)}else toast('Aún no hay nada apuntado');return}
   const tn=g('[data-tnew]');if(tn){const d=tn.dataset.tnew;r.days[d]=r.days[d]||{text:'',tables:[]};(r.days[d].tables=r.days[d].tables||[]).push({cols:['Columna 1','Columna 2'],rows:[{c:['','']}],color:''});saveReg(r);renderRegs();return}
   const tm=g('[data-tmenu]');if(tm){const [d,k]=tm.dataset.tmenu.split('|');obSheet('Tabla',dayTableItems(r,'dt|'+d+'|'+k).map(it=>({...it,sep:/^Eliminar/.test(it.t)})),(_,__,it)=>it.run());return}
@@ -9994,8 +10267,7 @@ if(im)im.onclick=()=>obConfirm('¿Sustituir tus datos por los de una copia?','El
 if(fi)fi.onchange=()=>{const f=fi.files&&fi.files[0];fi.value='';if(f)bkpRestore(f)};
 /* Archivo de otro Temvra, un .ics o una bóveda en ZIP: elegirlo o soltarlo sobre la ventana es como abrirlo desde WhatsApp en el móvil */
 {const b=$('tvp-open'),f2=$('tvp-file'),rd=async f=>importBytes(f.name,f.type||'',new Uint8Array(await f.arrayBuffer()));if(b&&f2){b.onclick=()=>f2.click();f2.onchange=()=>{const f=f2.files&&f2.files[0];f2.value='';if(f)rd(f)}}
-  document.addEventListener('dragover',e=>{if(e.dataTransfer&&[...e.dataTransfer.types].includes('Files'))e.preventDefault()});
-  document.addEventListener('drop',e=>{const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(!f||!/\.(json|ics|zip)$/i.test(f.name))return;e.preventDefault();rd(f)})}
+}
 bkpLabel();
 // Recordatorio: si hay datos, no hay sincronización con GitHub y la última copia tiene más de 14 días
 setTimeout(()=>{try{const synced=S.gh&&S.gh.links&&Object.keys(S.gh.links).length;

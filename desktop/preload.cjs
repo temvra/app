@@ -14,4 +14,8 @@ contextBridge.exposeInMainWorld('VTDesktop',{canDuck:process.platform==='linux',
   dirPick:()=>ipcRenderer.invoke('dir-pick'),dirList:r=>ipcRenderer.invoke('dir-list',r),dirRead:(r,p,bin)=>ipcRenderer.invoke('dir-read',r,p,!!bin),
   dirWrite:(r,p,d,bin)=>ipcRenderer.invoke('dir-write',r,p,d,!!bin),dirTrash:(r,p)=>ipcRenderer.invoke('dir-trash',r,p),dirMove:(r,a,b)=>ipcRenderer.invoke('dir-move',r,a,b),dirMkdir:(r,p)=>ipcRenderer.invoke('dir-mkdir',r,p),
   dirWatch:(r,cb)=>{ipcRenderer.removeAllListeners('dir-changed');ipcRenderer.on('dir-changed',(e,x)=>cb(String(x)));ipcRenderer.send('dir-watch',r)},
-  onFile:cb=>ipcRenderer.on('vt-file',(e,x)=>cb(x)),onLink:cb=>ipcRenderer.on('vt-link',(e,u)=>cb(String(u)))});
+  onFile:cb=>ipcRenderer.on('vt-file',(e,x)=>cb(x)),onLink:cb=>ipcRenderer.on('vt-link',(e,u)=>cb(String(u))),
+  // Zoom de la ventana (Ctrl+rueda, Ctrl + / − / 0): la página enseña el porcentaje y lo ofrece en la paleta
+  zoom:d=>ipcRenderer.send('vt-zoom-set',d),onZoom:cb=>ipcRenderer.on('vt-zoom',(e,p)=>cb(+p)),
+  // Una nota o un adjunto arrastrado fuera de la ventana sale como archivo
+  dragOut:(name,data)=>ipcRenderer.send('drag-out',String(name),data)});
