@@ -1,6 +1,6 @@
 # Temvra en Google Play
 
-Cuenta de desarrollador: **Karteria** (karteria.studio@gmail.com, cuenta personal). App: **Temvra**, paquete `com.temvra.app`.
+Cuenta de desarrollador: **Kelestra** (cuenta personal; antes se llamaba Karteria). La propiedad pasa de karteria.studio@gmail.com a **kelestra.studio@gmail.com**: transferencia enviada el 19 de noviembre de 2026, con 7 días de espera; kelestra.studio ya es administradora. App: **Temvra**, paquete `com.temvra.app` (creada en Play Console el 20 de noviembre de 2026).
 
 ## 1. Generar el paquete
 1. En GitHub: **Actions › Compilar para Google Play › Run workflow**.
@@ -11,8 +11,9 @@ Cuenta de desarrollador: **Karteria** (karteria.studio@gmail.com, cuenta persona
 El paquete va firmado con la clave de subida (la misma del keystore). La primera vez, Play Console ofrece **la firma de apps de Google Play**: acéptala.
 
 ## 2. Crear la app en Play Console
-- **Crear app** › Nombre: Temvra · Idioma: Español (España) · App · Gratis.
-- Categoría: **Productividad**. Correo de contacto: karteria.studio@gmail.com. Web: https://temvra.es
+- **Crear app** › Nombre: Temvra · Paquete: `com.temvra.app` · App · Gratis.
+- Idioma predeterminado: es el de reserva para quien tenga el móvil en un idioma sin traducir. Añade la ficha traducida a los 10 idiomas de la app (y español de Latinoamérica, `es-419`): Google Play enseña a cada usuario la de su idioma.
+- Categoría: **Productividad**. Correo de contacto: **hola@kelestra.com** (reenvío de Cloudflare a kelestra.studio@gmail.com). Web: https://temvra.github.io hasta que https://temvra.es tenga la web.
 
 ## 3. Ficha de Play Store
 Todo está en `fastlane/metadata/android/es-ES/`:
@@ -23,7 +24,7 @@ Todo está en `fastlane/metadata/android/es-ES/`:
 ## 4. Contenido de la app (formularios de Play Console)
 | Apartado | Respuesta |
 |---|---|
-| Política de privacidad | https://temvra.es/privacidad.html |
+| Política de privacidad | https://temvra.github.io/privacidad.html (cuando temvra.es tenga la web, https://temvra.es/privacidad.html). La app la enlaza en Ajustes › Ayuda › Política de privacidad, como pide Google |
 | Anuncios | No contiene anuncios |
 | Acceso a la app | Todas las funciones están disponibles sin acceso especial |
 | Clasificación de contenido | Categoría «Utilidades, productividad, comunicación u otros»; responde «No» a violencia, sexo, lenguaje, drogas, apuestas y compras. Saldrá PEGI 3 |
