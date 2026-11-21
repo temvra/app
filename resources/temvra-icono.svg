@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8B7CFF"/><stop offset=".55" stop-color="#5B4DF0"/><stop offset="1" stop-color="#3A33C9"/></linearGradient><linearGradient id="ray" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FF4D6A" stop-opacity="0"/><stop offset=".3" stop-color="#FF4D6A"/><stop offset=".5" stop-color="#FFFFFF"/><stop offset=".7" stop-color="#FF4D6A"/><stop offset="1" stop-color="#FF4D6A" stop-opacity="0"/></linearGradient>
+<filter id="gl" x="-10%" y="-300%" width="120%" height="700%"><feGaussianBlur stdDeviation="7"/></filter></defs><rect width="512" height="512" fill="url(#bg)"/><path d="M176 148 H336 L256 246 Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="28" stroke-linejoin="round"/>
+<g opacity=".5"><path d="M256 266 L336 364 H176 Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="28" stroke-linejoin="round"/></g>
+<rect x="32" y="248" width="448" height="16" rx="8" fill="url(#ray)" filter="url(#gl)"/>
+<rect x="32" y="252" width="448" height="8" rx="4" fill="url(#ray)"/>
+<circle cx="256" cy="256" r="13" fill="#FFFFFF"/></svg>
