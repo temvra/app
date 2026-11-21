@@ -118,10 +118,15 @@ function fetchTo(url,token,file,hops=0){return new Promise((ok,ko)=>{
     const tmp=file+'.part',out=fs.createWriteStream(tmp);res.pipe(out);
     out.on('finish',()=>out.close(()=>{try{fs.renameSync(tmp,file);ok(file)}catch(err){ko(err)}}));out.on('error',ko);
   }).on('error',ko)})}
+/* Solo se descargan e instalan versiones de temvra/app con el nombre de siempre, y la ruta que manda la página se normaliza antes de
+   usarla: un HTML malicioso dentro de la página no puede bajar un programa de otro repositorio ni ejecutar otro archivo del disco */
+const UPD_URL=/^https:\/\/api\.github\.com\/repos\/temvra\/app\/releases\/assets\/\d+$/,UPD_NAME=/^Temvra-Personal-\d+\.\d+\.\d+(-Windows\.exe|\.AppImage)$/;
+function updFile(f){const dir=path.join(app.getPath('userData'),'updates'),r=path.resolve(String(f||'')),rel=path.relative(dir,r);
+  return rel&&!rel.startsWith('..')&&!path.isAbsolute(rel)&&path.basename(rel)===rel&&UPD_NAME.test(rel)&&fs.existsSync(r)?r:''}
 ipcMain.handle('upd-download',async(e,url,token,name)=>{
-  if(!fromApp(e)||!/^https:\/\/api\.github\.com\//.test(String(url)))return {error:'url'};
+  if(!fromApp(e)||!UPD_URL.test(String(url))||!UPD_NAME.test(String(name||'')))return {error:'url'};
   const dir=path.join(app.getPath('userData'),'updates');fs.mkdirSync(dir,{recursive:true});
-  const file=path.join(dir,path.basename(String(name||'Temvra-update')));
+  const file=path.join(dir,String(name));
   try{await fetchTo(url,token,file);return {path:file}}catch(err){
     // Repositorio público: si el token guardado ya no vale, sin él
     if(token&&/http 40[13]/.test(String(err.message)))try{await fetchTo(url,null,file);return {path:file}}catch(e2){return {error:String(e2.message||e2)}}
@@ -135,15 +140,14 @@ function updClean(){const dir=path.join(app.getPath('userData'),'updates'),ver=s
   newer.sort((a,b)=>cmp(b[0],a[0])).slice(1).forEach(([,f])=>del(f))}
 /* Actualización en silencio: se guarda y se aplica cuando la app se cierra */
 let updPending='';
-ipcMain.handle('upd-quit',(e,file)=>{if(!fromApp(e))return {error:'origin'};file=String(file||'');const dir=path.join(app.getPath('userData'),'updates');if(!file.startsWith(dir+path.sep)||!fs.existsSync(file))return {error:'missing'};
+ipcMain.handle('upd-quit',(e,file)=>{if(!fromApp(e))return {error:'origin'};file=updFile(file);if(!file)return {error:'missing'};
   if(process.platform!=='win32'&&!process.env.APPIMAGE)return {error:'unsupported'};updPending=file;return {ok:true}});
 app.on('will-quit',()=>{if(!updPending)return;const f=updPending;updPending='';try{
   if(process.platform==='win32'){const {spawn}=require('node:child_process');spawn(f,['/S'],{detached:true,stdio:'ignore'}).unref()}
   else if(process.env.APPIMAGE){const dst=process.env.APPIMAGE,tmp=dst+'.new';fs.copyFileSync(f,tmp);fs.chmodSync(tmp,0o755);fs.renameSync(tmp,dst)}
   }catch(e){}});
 ipcMain.handle('upd-install',async(e,file)=>{
-  if(!fromApp(e))return {error:'origin'};file=String(file||'');
-  const dir=path.join(app.getPath('userData'),'updates');if(!file.startsWith(dir+path.sep)||!fs.existsSync(file))return {error:'missing'};
+  if(!fromApp(e))return {error:'origin'};file=updFile(file);if(!file)return {error:'missing'};
   try{
     if(process.platform==='win32'){const err=await shell.openPath(file);if(err)return {error:err};setTimeout(quit,1500);return {ok:true}}
     // Linux con AppImage: se sustituye el archivo y se vuelve a abrir

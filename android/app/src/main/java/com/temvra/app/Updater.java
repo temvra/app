@@ -62,7 +62,8 @@ final class Updater {
         h.setInstanceFollowRedirects(false);
         h.setRequestProperty("User-Agent", "Temvra");
         h.setRequestProperty("Accept", accept);
-        if (token != null && !token.isEmpty()) h.setRequestProperty("Authorization", "Bearer " + token);
+        // El token solo viaja a la API de GitHub, nunca a otra dirección
+        if (token != null && !token.isEmpty() && "api.github.com".equals(new URL(url).getHost())) h.setRequestProperty("Authorization", "Bearer " + token);
         return h;
     }
 
@@ -136,6 +137,41 @@ final class Updater {
         return out;
     }
 
+    /** Dirección y nombre de un APK de una versión de temvra/app: lo único que se descarga. */
+    static boolean validAsset(String url, String name) {
+        return url != null && url.matches("https://api\\.github\\.com/repos/temvra/app/releases/assets/\\d+")
+                && name != null && name.matches("Temvra-Personal-\\d+\\.\\d+\\.\\d+\\.apk");
+    }
+
+    /**
+     * Solo se abre el instalador con un APK de la carpeta de descargas que sea esta misma app y esté firmado con la misma clave:
+     * así nada puede presentar otra app como «actualización».
+     */
+    static boolean trusted(Context c, File apk) {
+        try {
+            File dir = new File(c.getCacheDir(), "updates").getCanonicalFile();
+            if (apk == null || !apk.isFile() || !dir.equals(apk.getCanonicalFile().getParentFile())) return false;
+            android.content.pm.PackageManager pm = c.getPackageManager();
+            int fl = Build.VERSION.SDK_INT >= 28 ? android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES : android.content.pm.PackageManager.GET_SIGNATURES;
+            android.content.pm.PackageInfo a = pm.getPackageArchiveInfo(apk.getPath(), fl), me = pm.getPackageInfo(c.getPackageName(), fl);
+            if (a == null || !c.getPackageName().equals(a.packageName)) return false;
+            java.util.Set<String> sa = sigs(a), sm = sigs(me);
+            return !sa.isEmpty() && sa.equals(sm);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private static java.util.Set<String> sigs(android.content.pm.PackageInfo p) {
+        java.util.Set<String> out = new java.util.HashSet<>();
+        android.content.pm.Signature[] s = null;
+        if (Build.VERSION.SDK_INT >= 28 && p.signingInfo != null)
+            s = p.signingInfo.hasMultipleSigners() ? p.signingInfo.getApkContentsSigners() : p.signingInfo.getSigningCertificateHistory();
+        else s = p.signatures;
+        if (s != null) for (android.content.pm.Signature x : s) out.add(x.toCharsString());
+        return out;
+    }
+
     static boolean canInstall(Context c) {
         return Build.VERSION.SDK_INT < 26 || c.getPackageManager().canRequestPackageInstalls();
     }
@@ -168,7 +204,7 @@ final class Updater {
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
         channel(c, nm);
-        Intent open = apk != null && canInstall(c) ? installIntent(c, apk)
+        Intent open = apk != null && canInstall(c) && trusted(c, apk) ? installIntent(c, apk)
                 : new Intent(c, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP).putExtra(TemvraPlugin.EXTRA_ACTION, "update");
         PendingIntent pi = PendingIntent.getActivity(c, NOTIF_ID, open, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         String v = tag.replaceFirst("^v", "");

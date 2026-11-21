@@ -1,6 +1,6 @@
 // Pruebas de la app en Electron sin ventana y con perfiles temporales: no tocan los datos ni el llavero del usuario y no salen a internet.
 // Uso: npm test (Linux, con desktop/node_modules instalado). Sale con 1 si algo falla.
-import {spawn,execFileSync} from 'node:child_process';import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import {fileURLToPath} from 'node:url';
+import {spawn,execFileSync} from 'node:child_process';import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import {fileURLToPath} from 'node:url';import {createRequire} from 'node:module';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),app=path.join(root,'desktop'),enlace=path.join(app,'www');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms)),temporales=[],abiertas=[];let fallos=0;
 const ok=(c,n,d)=>{console.log((c?'✓ ':'✗ ')+n+(c||d===undefined?'':' → '+JSON.stringify(d)));if(!c)fallos++};
@@ -304,6 +304,36 @@ async function buscarNota(a){
   await a.tecla('f',2);await sleep(500);const r3=await a.ev(`VTAPI.state().obPanel`);await a.ev(`(()=>{const S=VTAPI.state();S.obPanel='files'})()`);
   ok(r3==='search','notas: sin nota abierta, Ctrl+F abre la búsqueda en todas las notas',{panel:r3})}
 
+/* Seguridad: un contenido compartido malicioso (Markdown que rompía atributos, imagen, colores y hora de alarma con HTML) no ejecuta nada
+   al aceptarlo ni al pintarlo, lo que traía se guarda limpio, y el actualizador del PC rechaza otros repositorios y rutas fuera de su carpeta */
+async function seguridad(a){
+  const r=await a.ev(`(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms)),S=VTAPI.state(),o={},k=new Date(),p=n=>String(n).padStart(2,'0'),day=k.getFullYear()+'-'+p(k.getMonth()+1)+'-'+p(k.getDate());
+    const pay={temvra:'compartir',titulo:'Receta',datos:{notes:[{title:'Receta QA',body:'![[foto.png]]\\n\\n![](https://0/[)](https://onerror=window.__xss=1//)',color:'red"><img src=x onerror=window.__xss=2>'}],
+      atts:[{name:'foto.png',data:'x" onerror="window.__xss=3'}],alarms:[{t:'<img src=x onerror=window.__xss=4>',label:'QA',days:[]}],
+      events:[{title:'Cena QA',date:day,allDay:true,color:'x"><img src=x onerror=window.__xss=5>'}]}};
+    const b64u=t=>btoa(unescape(encodeURIComponent(t))).replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,'');
+    VTAPI.openLink('temvra://a?d=j'+b64u(JSON.stringify(pay)));await w(900);
+    const add=[...document.querySelectorAll('#obs-body [data-i]')].find(b=>/Añadir a mi Temvra/.test(b.textContent));o.hoja=!!add;if(add)add.click();await w(1500);
+    o.leida=!!document.querySelector('#ne-read')&&!document.getElementById('noteview').hidden;o.atributos=document.querySelectorAll('[onerror]').length;
+    document.querySelector('.nav [data-view=time]').click();await w(300);document.getElementById('tab-alarm').click();await w(500);
+    document.querySelector('.nav [data-view=cal]').click();await w(900);
+    const n=S.notes.find(x=>x.title==='Receta QA'),e=S.events.find(x=>x.title==='Cena QA');
+    o.limpio={color:!!(n&&n.color),adjunto:S.atts.some(x=>x.name==='foto.png'),alarma:S.alarms.some(x=>x.label==='QA'),evento:!!e,colorEv:!!(e&&e.color)};
+    o.xss=window.__xss||0;
+    if(!document.getElementById('noteview').hidden)document.getElementById('ne-close').click();
+    S.notes=S.notes.filter(x=>x!==n);S.events=S.events.filter(x=>x!==e);
+    const D=window.VTDesktop;o.upd=D?[await D.downloadUpdate('https://api.github.com/repos/otro/x/releases/assets/1','','Temvra-Personal-9.9.9.AppImage'),
+      await D.downloadUpdate('https://api.github.com/repos/temvra/app/releases/assets/1','','../malo.sh'),await D.installUpdate('/etc/passwd'),await D.installOnQuit('/tmp/../etc/passwd')].map(x=>x&&x.error).join():'sin VTDesktop';
+    return o})()`);
+  ok(r.hoja&&r.leida&&!r.xss&&!r.atributos&&!r.limpio.color&&!r.limpio.adjunto&&!r.limpio.alarma&&r.limpio.evento&&!r.limpio.colorEv,'seguridad: lo compartido no ejecuta código y se guarda limpio',r);
+  ok(r.upd==='url,url,missing,missing','seguridad: el actualizador del PC solo acepta temvra/app y archivos de su carpeta',r.upd)}
+
+/* La bóveda en carpeta nunca escribe en lo oculto (.obsidian, .git…), y la papelera (.trash) sigue funcionando */
+async function bovedaOculta(){const vd=createRequire(import.meta.url)(path.join(app,'vault-dir.cjs')),dir=fs.mkdtempSync(path.join(os.tmpdir(),'temvra-boveda-'));temporales.push(dir);
+  let oculta='';try{await vd.write(dir,'.obsidian/plugins/x/main.js','x')}catch(e){oculta=e.message}
+  await vd.write(dir,'Notas/a.md','hola');const t=await vd.trash(dir,'Notas/a.md');
+  ok(oculta==='Ruta oculta'&&!fs.existsSync(path.join(dir,'.obsidian'))&&t&&fs.existsSync(path.join(dir,'.trash','Notas','a.md')),'bóveda en carpeta: nada en carpetas ocultas y la papelera sigue funcionando',{oculta,t})}
+
 /* PC: al arrancar se borran las versiones descargadas de la actual o anteriores, las descargas a medias y lo que no lleva versión;
    de las más nuevas se queda solo la última. Aquí la app es la 1.0.0 (desktop/package.json) */
 async function limpiezaPC(){const NOM=['Temvra-Personal-0.9.9.AppImage','Temvra-Personal-1.0.0.AppImage','Temvra-Personal-1.0.5.AppImage.part','Temvra-update','Temvra-Personal-1.0.7-Windows.exe','Temvra-Personal-1.0.12.AppImage'];
@@ -336,9 +366,9 @@ try{
   const pc=await abre(9701,[1440,900]);
   const r=await vacio(pc,true);ok(r.vistas===7&&r.panel,'PC: todas las vistas de la Agenda y panel de días junto al Mes',r);
   await sinVisita(pc);await centrar(pc);await aro(pc,true);await guardado(pc);await token(pc);
-  await encabezado(pc);await burbujaNota(pc);await fechaHoy(pc);await letraWidgets(pc);await avisoTarde(pc);await sincroniza(pc);await notasPC(pc);await zoomPC(pc);await buscarNota(pc);
+  await encabezado(pc);await burbujaNota(pc);await fechaHoy(pc);await letraWidgets(pc);await avisoTarde(pc);await sincroniza(pc);await notasPC(pc);await zoomPC(pc);await buscarNota(pc);await seguridad(pc);
   ok(!pc.errores.length,'PC: sin errores de JavaScript',pc.errores);pc.cierra();
-  await limpiezaPC();
+  await limpiezaPC();await bovedaOculta();
   console.log('— Móvil 412×915');
   const mv=await abre(9702,[412,915],true);
   await vacio(mv,false);ok(!await mv.ev(`document.body.classList.contains('deskcal')`),'móvil: sin panel de días');

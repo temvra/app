@@ -3862,6 +3862,24 @@ body:not(.desk) #v-blocks.bkwk .bk-time,body:not(.desk) #v-blocks.bkwk .bk-em{di
 (async()=>{
 const $=id=>document.getElementById(id);
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* Seguridad: lo que llega de fuera (compartido, bóveda .zip, GitHub) pasa por sane() antes de guardarse, y al pintar, las imágenes,
+   los colores y los enlaces pasan por safeSrc, cssColor y safeUrl: ningún dato puede cerrar un atributo y meter HTML que se ejecute */
+const safeSrc=d=>typeof d==='string'&&/^data:image\/(png|jpe?g|gif|webp|avif|bmp);base64,/i.test(d.slice(0,40))&&!/["'<>\s\\]/.test(d)?d:'';
+const cssColor=c=>{c=typeof c==='string'?c.trim():'';return /^(#[0-9a-fA-F]{3,8}|var\(--[\w-]+\)|[a-zA-Z]{3,20}|(rgb|hsl)a?\([\d\s.,%/a-z]{1,40}\))$/.test(c)?c:''};
+const safeUrl=u=>{u=String(u||'').trim();return /^(https?:|mailto:)/i.test(u)?u:''};
+const SANE_ID=/^(id|cal|ag|cat|list|f|att|note|sub|agenda|vault|parent|ref|fromNode|toNode)$/;
+/* Limpia en el sitio: identificadores sin comillas ni etiquetas, colores CSS válidos, imágenes solo data:image en base64 y fechas u horas sin
+   caracteres de HTML. Los textos (títulos, notas) se quedan como están: al pintarlos siempre pasan por esc() */
+function sane(o,d=0){if(o==null||typeof o!=='object'||d>12)return o;if(Array.isArray(o)){o.forEach(x=>sane(x,d+1));return o}
+  for(const k of Object.keys(o)){if(k==='__proto__'||k==='constructor'||k==='prototype'){delete o[k];continue}const v=o[k];
+    if(typeof v==='string'){
+      if(k==='imgData'||(k==='data'&&o.kind!=='file')||(k==='img'&&v.startsWith('data:'))){if(!safeSrc(v))delete o[k]}
+      else if(SANE_ID.test(k)||k==='img')o[k]=v.replace(/["'<>&`\\\s]/g,'_');
+      else if(/color$/i.test(k)){const c=cssColor(v);if(c)o[k]=c;else delete o[k]}
+      else if(/^(date|until|start|end)$/.test(k)&&/["'<>&`\\]/.test(v))delete o[k]}
+    else if(k==='fc'&&v&&typeof v==='object'&&!Array.isArray(v)){for(const f of Object.keys(v)){const c=cssColor(v[f]);if(c&&f!=='__proto__')v[f]=c;else delete v[f]}}
+    else if(v&&typeof v==='object')sane(v,d+1)}
+  return o}
 const LS={get(k,d){try{const v=localStorage.getItem('vt2_'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){if(k==='state')return stSave(v);try{localStorage.setItem('vt2_'+k,JSON.stringify(v));return true}catch(e){return false}}};
 /* Token de GitHub: va al almacén cifrado del sistema (Android Keystore o el llavero del PC). Si el sistema no lo ofrece, sigue con los datos como antes */
 const SEC=window.VTSecret||(window.VTDesktop&&window.VTDesktop.secret)||null;let secOK=false,secLast='';try{secOK=!!SEC&&!!SEC.ok()}catch(e){}
@@ -4341,7 +4359,7 @@ function nextAlarm(){
 function renderAlarms(){
   const list=S.alOwn?[...S.alarms]:[...S.alarms].sort((a,b)=>a.t.localeCompare(b.t));$('al-sortw').hidden=!S.alOwn||S.alarms.length<2;
   $('alarm-list').innerHTML=list.length?list.map((a,i)=>`<div class="row${i===list.length-1?' last':''}${a.on?'':' al-off'}" data-id="${a.id}" role="button" tabindex="0" style="cursor:pointer">
-    <div class="txt"><div class="al-time">${a.t}</div><div class="t2">${esc(a.label||'Alarma')} · ${daysTxt(a.days)}</div></div>
+    <div class="txt"><div class="al-time">${esc(a.t)}</div><div class="t2">${esc(a.label||'Alarma')} · ${daysTxt(a.days)}</div></div>
     <button class="switch" role="switch" aria-checked="${a.on}" data-tog="${a.id}" aria-label="Activar alarma ${a.t}"></button></div>`).join('')
     :'<div class="row last"><div class="txt empty">No tienes alarmas. Pulsa + para crear una.</div></div>';
   const n=nextAlarm();
@@ -4693,7 +4711,8 @@ if(!S.subs)S.subs=[];if(!S.appts)S.appts=[];if(!S.work)S.work={on:false,days:[1,
 if(!S.calView)S.calView='month';if(S.weekNum==null)S.weekNum=false;
 const calOf=e=>S.cals.find(c=>c.id===(e.cal||'personal'))||S.cals[0];
 function evVisible(e){if(e.sub)return true;if(e.kind==='task')return S.calShow.tasks!==false;if(e.cat)return S.calShow.blocks!==false&&!e.hideCal;if(e.type==='bday')return S.calShow.bday!==false;return calOf(e).on!==false}
-function evColorOf(e){if(e.color)return e.color;if(e.cat){const c=(S.blockCats||[]).find(x=>x.id===e.cat);if(c)return c.color}if(e.subColor)return e.subColor;if(e.type==='bday')return '#2fb35b';if(e.kind!=='task'){const c=calOf(e);if(c&&c.color)return c.color}return ''}
+function evColorOf(e){return cssColor(evColorRaw(e))}
+function evColorRaw(e){if(e.color)return e.color;if(e.cat){const c=(S.blockCats||[]).find(x=>x.id===e.cat);if(c)return c.color}if(e.subColor)return e.subColor;if(e.type==='bday')return '#2fb35b';if(e.kind!=='task'){const c=calOf(e);if(c&&c.color)return c.color}return ''}
 function occDates(e,a,b){const r=e.rec,out=[];if(!e.date)return out;const st=fromKey(e.date),iv=Math.max(1,+r.i||1),endD=r.end&&r.end.t==='date'&&r.end.d?r.end.d:'9999-12-31',maxN=r.end&&r.end.t==='count'?Math.max(1,+r.end.n||1):1e9,ex=e.ex||[];let n=0;
   const take=k=>{if(k>endD||k>b||n>=maxN)return false;n++;if(k>=a&&!ex.includes(k))out.push(k);return true};
   if(r.f==='d'){const d=new Date(st);for(let g=0;g<5000;g++){if(!take(dk(d)))break;d.setDate(d.getDate()+iv)}}
@@ -5386,13 +5405,14 @@ function tvpOpen(o){const d=o&&o.datos;if(!d||typeof d!=='object'||tvpSum(d)==='
   const names=[...(d.notes||[]).map(n=>n.title||'Sin título'),...(d.timers||[]).map(t=>t.t),...(d.myCircuits||[]).map(c=>c.name),...(d.myTpl||[]).map(c=>c.name),
     ...(d.alarms||[]).map(a=>(a.label||'Alarma')+' '+a.t),...(d.events||[]).map(e=>e.title),...(d.appts||[]).map(a=>a.title)].filter(Boolean);
   obSheet('Te han compartido «'+(o.titulo||'Temvra')+'»',[{t:'Añadir a mi Temvra',s:tvpSum(d)+(names.length?' · '+names.slice(0,4).join(', ')+(names.length>4?' y '+(names.length-4)+' más':''):''),ic:SHIC.tv},{t:'Ahora no'}],i=>{if(i===0)tvpAdd(o)})}
-async function tvpAdd(o){const d=o.datos,uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,6),done=[];let go=null;
+async function tvpAdd(o){const d=sane(o.datos),uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,6),done=[];let go=null;
   /* Notas: en la bóveda abierta, con sus carpetas. Si ya hay una nota o un adjunto con ese nombre en la carpeta, el nuevo lleva «(2)» */
   if((d.notes&&d.notes.length)||(d.atts&&d.atts.length)){
-    const fold=f=>{f=String(f||'').replace(/^\/+|\/+$/g,'');let q=f;while(q){if(!S.folders.includes(q))S.folders.push(q);q=parentOf(q)}return f};
+    /* Sin carpetas ocultas (.obsidian, .git…): en una bóveda en carpeta otra app podría tomar lo que se escriba ahí */
+    const fold=f=>{f=String(f||'').split('/').map(x=>x.replace(/^[.\s]+/,'').trim()).filter(Boolean).join('/');let q=f;while(q){if(!S.folders.includes(q))S.folders.push(q);q=parentOf(q)}return f};
     const free=(list,key,folder,name)=>{const ext=key==='name'?(name.match(/(\.[^.\/]+)$/)||[''])[0]:'',base=ext?name.slice(0,-ext.length):name;let q=name,i=2;while(list.some(x=>(x.folder||'')===folder&&(x[key]||'')===q))q=base+' ('+(i++)+')'+ext;return q};
     (d.folders||[]).forEach(fold);const ren={},first=[];
-    for(const a of d.atts||[]){if(!a.data)continue;const folder=fold(a.folder),name=free(S.atts,'name',folder,a.name||'archivo'),id=uid('a');if(name!==a.name)ren[a.name]=name;
+    for(const a of d.atts||[]){if(!a.data)continue;const folder=fold(a.folder),name=free(S.atts,'name',folder,String(a.name||'').replace(/^[.\s]+/,'')||'archivo'),id=uid('a');if(name!==a.name)ren[a.name]=name;
       if(a.kind==='file'){const by=b64bytes(a.data);await filePut(id,new Blob([by],{type:a.mime||'application/octet-stream'}));S.atts.push({id,kind:'file',name,mime:a.mime||'',size:by.length,folder,created:Date.now(),updated:Date.now()})}
       else{setImg(id,a.data);S.atts.push({id,name,folder,created:Date.now(),updated:Date.now()})}}
     for(const n of d.notes||[]){const folder=fold(n.folder);let body=String(n.body||'');Object.keys(ren).forEach(k=>{body=body.split('[['+k).join('[['+ren[k])});
@@ -5403,6 +5423,7 @@ async function tvpAdd(o){const d=o.datos,uid=p=>p+Date.now().toString(36)+Math.r
     (d.timers||[]).forEach(t=>S.timers.push(Object.assign({},t,{id:uid('t'),f:fm[t.f]||''})));done.push(tvpSum(d.timers&&d.timers.length?{timers:d.timers}:{tfolders:d.tfolders}));go=go||(()=>{show('timer');renderPresets()})}
   if(d.myCircuits&&d.myCircuits.length){d.myCircuits.forEach(c=>S.myCircuits.push(Object.assign(JSON.parse(JSON.stringify(c)),{id:uid('m')})));done.push(tvpSum({myCircuits:d.myCircuits}));go=go||(()=>{show('circ');renderCircuit()})}
   if(d.myTpl&&d.myTpl.length){d.myTpl.forEach(c=>S.myTpl.push(Object.assign(JSON.parse(JSON.stringify(c)),{id:uid('u')})));done.push(tvpSum({myTpl:d.myTpl}));go=go||(()=>{show('circ');renderCircuit()})}
+  if(d.alarms)d.alarms=d.alarms.filter(a=>a&&/^\d{1,2}:\d{2}$/.test(a.t));
   if(d.alarms&&d.alarms.length){d.alarms.forEach((a,i)=>{const x=Object.assign({},a,{id:Date.now()+i,days:[...(a.days||[])]});delete x.snooze;S.alarms.push(x)});done.push(tvpSum({alarms:d.alarms}));go=go||(()=>{show('alarm');renderAlarms()})}
   /* Agenda: en la agenda abierta y en tu calendario si no tienes el suyo; las categorías de los bloques se unen por nombre */
   let cal=false;
@@ -5462,7 +5483,8 @@ function hexRgb(h){h=h.replace('#','');if(h.length===3)h=h.split('').map(x=>x+x)
 
 /* ===================== Lienzo (mapa conceptual) ===================== */
 const CV_COL={'1':'#e5484d','2':'#f2622e','3':'#e8a317','4':'#2fb35b','5':'#14a395','6':'#8b6cf6'};
-function cvParse(n){try{const j=JSON.parse(n.body||'{}');return {nodes:j.nodes||[],edges:j.edges||[]}}catch(e){return {nodes:[],edges:[]}}}
+function cvParse(n){try{const j=JSON.parse(n.body||'{}'),num=v=>Number.isFinite(+v)?+v:0,N=(Array.isArray(j.nodes)?j.nodes:[]).filter(x=>x&&typeof x==='object').map(x=>Object.assign(sane(x),{x:num(x.x),y:num(x.y),width:num(x.width)||250,height:num(x.height)||60,type:String(x.type||'text').replace(/[^\w-]/g,'')}));
+    return {nodes:N,edges:(Array.isArray(j.edges)?j.edges:[]).filter(x=>x&&typeof x==='object').map(x=>sane(x))}}catch(e){return {nodes:[],edges:[]}}}
 let cvNote=null,CV=null,cvT={x:0,y:0,k:1},cvSel=null,cvSelE=null,cvEditing=null;
 /* Con ratón se habla de doble clic; en pantalla táctil, de tocar */
 const cvDbl=()=>matchMedia('(pointer:coarse)').matches?'Toca dos veces':'Haz doble clic';
@@ -5480,11 +5502,11 @@ function cvSide(n,s){return s==='top'?[n.x+n.width/2,n.y]:s==='bottom'?[n.x+n.wi
 function cvBestSides(a,b){const ca=[a.x+a.width/2,a.y+a.height/2],cb=[b.x+b.width/2,b.y+b.height/2],dx=cb[0]-ca[0],dy=cb[1]-ca[1];return Math.abs(dx)>Math.abs(dy)?(dx>0?['right','left']:['left','right']):(dy>0?['bottom','top']:['top','bottom'])}
 function cvPath(e){const a=cvNodeAt(e.fromNode),b=cvNodeAt(e.toNode);if(!a||!b)return '';const [fs,ts]=e.fromSide&&e.toSide?[e.fromSide,e.toSide]:cvBestSides(a,b),p=cvSide(a,fs),q=cvSide(b,ts),off=s=>s==='top'?[0,-1]:s==='bottom'?[0,1]:s==='left'?[-1,0]:[1,0],d=Math.max(40,Math.hypot(q[0]-p[0],q[1]-p[1])/3),o1=off(fs),o2=off(ts);
   return `M${p[0]},${p[1]} C${p[0]+o1[0]*d},${p[1]+o1[1]*d} ${q[0]+o2[0]*d},${q[1]+o2[1]*d} ${q[0]},${q[1]}`}
-function cvNodeHTML(n){const col=CV_COL[n.color]||n.color||'';let inner='';
+function cvNodeHTML(n){const col=CV_COL[n.color]||cssColor(n.color);let inner='';
   if(n.type==='text')inner=cvEditing===n.id?`<textarea class="cv-ta" data-cvta="${n.id}">${esc(n.text||'')}</textarea>`:`<div class="md cv-md">${md(n.text||'')||'<span class="cv-ph">'+cvDbl()+' para escribir</span>'}</div>`;
   else if(n.type==='file'){const t=nfind((n.file||'').replace(/\.md$/,''));inner=`<div class="cv-file"><b>${OB_IC.note} ${esc((n.file||'').replace(/\.md$/,''))}</b>${t?`<div class="md cv-md">${md(t.body.slice(0,600))}</div>`:'<span class="cv-ph">Nota no encontrada</span>'}</div>`}
-  else if(n.type==='image'){const a=S.atts.find(x=>x.id===n.att);inner=a?`<img src="${getImg(a.id)||''}" alt="" draggable="false">`:'<span class="cv-ph">Imagen</span>'}
-  else if(n.type==='link')inner=`<a class="cv-link" href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.url)}</a>`;
+  else if(n.type==='image'){const a=S.atts.find(x=>x.id===n.att);inner=a?`<img src="${safeSrc(getImg(a.id))}" alt="" draggable="false">`:'<span class="cv-ph">Imagen</span>'}
+  else if(n.type==='link')inner=`<a class="cv-link"${safeUrl(n.url)?` href="${esc(safeUrl(n.url))}"`:''} target="_blank" rel="noopener">${esc(n.url||'')}</a>`;
   const sel=cvSel===n.id;return `<div class="cv-node${sel?' sel':''} t-${n.type}" data-cvn="${n.id}" style="left:${n.x}px;top:${n.y}px;width:${n.width}px;height:${n.height}px;${col?`--cc:${col};`:''}">${inner}
     ${sel?`<i class="cv-h cvh-t" data-cvh="top"></i><i class="cv-h cvh-r" data-cvh="right"></i><i class="cv-h cvh-b" data-cvh="bottom"></i><i class="cv-h cvh-l" data-cvh="left"></i><i class="cv-rs" data-cvrs="1"></i>`:''}</div>`}
 function cvRender(){const L=$('cv-layer');L.style.transform=`translate(${cvT.x}px,${cvT.y}px) scale(${cvT.k})`;
@@ -5888,7 +5910,7 @@ async function attachFiles(files){let txt='';for(const f of files){if(f.size>60*
 $('ne-file').addEventListener('change',e=>{const fs=[...e.target.files];e.target.value='';if(fs.length)attachFiles(fs)});
 function pickAnyFile(){const i=$('ne-file');i.value='';i.click()}
 /* Tarjeta incrustada en la nota */
-function attEmbedHTML(a,w){const t=attType(a);if(t==='img'){const d=getImg(a.id);return d?`<img alt="${esc(a.name)}" src="${d}"${w?` style="width:${w}px"`:''} data-attopen="${a.id}">`:`<span class="wl missing">${esc(a.name)}</span>`}
+function attEmbedHTML(a,w){const t=attType(a);if(t==='img'){const d=safeSrc(getImg(a.id));return d?`<img alt="${esc(a.name)}" src="${d}"${w?` style="width:${w}px"`:''} data-attopen="${a.id}">`:`<span class="wl missing">${esc(a.name)}</span>`}
   const [c,l]=FT_IC[t];const media=t==='audio'?`<audio controls preload="metadata" data-attsrc="${a.id}"></audio>`:t==='video'?`<video controls playsinline preload="metadata" data-attsrc="${a.id}"></video>`:'';
   return `<span class="att-card t-${t}" data-attopen="${a.id}"><span class="att-ic" style="--fc:${c}">${l}</span><span class="att-tx"><b>${esc(a.name)}</b><small>${fmtSize(a.size)} · toca para abrir</small></span></span>${media}`}
 async function hydrateMedia(root){for(const el of root.querySelectorAll('[data-attsrc]')){if(el.src)continue;const b=await fileGet(el.dataset.attsrc);if(b)el.src=URL.createObjectURL(b)}}
@@ -5896,7 +5918,7 @@ async function hydrateMedia(root){for(const el of root.querySelectorAll('[data-a
 let fvAtt=null;
 async function openAtt(id){const a=S.atts.find(x=>x.id===id);if(!a)return;fvAtt=a;const t=attType(a);$('iv-name').textContent=a.name;$('iv-size').textContent=a.size?fmtSize(a.size):'';$('img-viewer').hidden=false;$('img-viewer').dataset.id=id;
   const B=$('fv-body');B.className='fv-body t-'+t;B.innerHTML='<div class="fv-load">Abriendo…</div>';
-  if(t==='img'){B.innerHTML=`<img id="iv-img" alt="" src="${getImg(a.id)||''}">`;return}
+  if(t==='img'){B.innerHTML=`<img id="iv-img" alt="" src="${safeSrc(getImg(a.id))}">`;return}
   const blob=await fileGet(a.id);if(!blob){B.innerHTML=fvGeneric(a,'No se encontró el archivo en este dispositivo.');return}
   const url=URL.createObjectURL(blob);
   if(t==='audio')B.innerHTML=`<div class="fv-audio"><span class="att-ic big" style="--fc:${FT_IC.audio[0]}">♪</span><b>${esc(a.name)}</b><audio controls autoplay src="${url}"></audio></div>`;
@@ -5905,10 +5927,10 @@ async function openAtt(id){const a=S.atts.find(x=>x.id===id);if(!a)return;fvAtt=
     else if(extOf(a.name)==='md')B.innerHTML=`<div class="md fv-md">${md(tx)}</div>`;else B.innerHTML=`<pre class="fv-pre">${esc(tx)}</pre>`}
   else if(t==='pdf')renderPdf(blob,B,a);
   else B.innerHTML=fvGeneric(a)}
-function fvGeneric(a,msg){const t=attType(a),[c,l]=FT_IC[t];return `<div class="fv-gen"><span class="att-ic big" style="--fc:${c}">${l}</span><b>${esc(a.name)}</b><small>${a.size?fmtSize(a.size)+' · ':''}${(extOf(a.name)||'archivo').toUpperCase()}</small><p>${msg||'Este tipo de archivo se abre con otra app del móvil (Word, Excel, Drive…).'}</p><div class="fv-acts"><button class="btn" data-fv="open">Abrir con otra app</button><button class="btn tonal" data-fv="save">Guardar en el dispositivo</button></div></div>`}
+function fvGeneric(a,msg){const t=attType(a),[c,l]=FT_IC[t];return `<div class="fv-gen"><span class="att-ic big" style="--fc:${c}">${l}</span><b>${esc(a.name)}</b><small>${a.size?fmtSize(a.size)+' · ':''}${esc((extOf(a.name)||'archivo').toUpperCase())}</small><p>${msg||'Este tipo de archivo se abre con otra app del móvil (Word, Excel, Drive…).'}</p><div class="fv-acts"><button class="btn" data-fv="open">Abrir con otra app</button><button class="btn tonal" data-fv="save">Guardar en el dispositivo</button></div></div>`}
 async function renderPdf(blob,B,a){try{await loadLib('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js','pdfjsWorker');const lib=await loadLib('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js','pdfjsLib');
     lib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    const pdf=await lib.getDocument({data:new Uint8Array(await blob.arrayBuffer())}).promise;if(fvAtt!==a)return;B.innerHTML=`<div class="fv-pages" id="fv-pages"></div><div class="fv-pgn">${pdf.numPages} ${pdf.numPages>1?'páginas':'página'}</div>`;
+    const pdf=await lib.getDocument({data:new Uint8Array(await blob.arrayBuffer()),isEvalSupported:false}).promise;if(fvAtt!==a)return;B.innerHTML=`<div class="fv-pages" id="fv-pages"></div><div class="fv-pgn">${pdf.numPages} ${pdf.numPages>1?'páginas':'página'}</div>`;
     const W=Math.min(B.clientWidth-24,900);for(let i=1;i<=pdf.numPages&&i<=200;i++){if(fvAtt!==a||$('img-viewer').hidden)return;const pg=await pdf.getPage(i),vp0=pg.getViewport({scale:1}),sc=W/vp0.width,vp=pg.getViewport({scale:sc*(devicePixelRatio||1)}),cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;cv.style.width=W+'px';$('fv-pages').appendChild(cv);await pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise}}
   catch(e){B.innerHTML=fvGeneric(a,'No se pudo mostrar el PDF aquí (hace falta conexión la primera vez). Puedes abrirlo con otra app.')}}
 $('img-viewer').addEventListener('click',async e=>{const b=e.target.closest('[data-fv]');if(!b||!fvAtt)return;const a=fvAtt;
@@ -6065,7 +6087,7 @@ function runTSearch(){const q=norm($('ts-q').value.trim()),m=x=>!q||norm(x).incl
   S.myCircuits.filter(c=>m(c.name)).forEach(c=>res.push(['Circuitos',`<button class="row" data-tsr="mc|${c.id}"><div class="tile">🏋️</div><div class="txt"><div class="t1">${hl(c.name,q)}</div><div class="t2">${c.steps.filter(s=>s.type==='work').length} ${c.steps.filter(s=>s.type==='work').length===1?'ejercicio':'ejercicios'} · ${c.rounds} ${c.rounds===1?'ronda':'rondas'}</div></div></button>`]));
   S.myTpl.filter(t=>m(t.name)).forEach(t=>res.push(['Circuitos',`<button class="row" data-tsr="ut|${t.id}"><div class="tile">⭐</div><div class="txt"><div class="t1">${hl(t.name,q)}</div><div class="t2">Plantilla propia</div></div></button>`]));
   TPL_NAMES.filter(([k,n])=>m(n)&&!S.hidTpl.includes(k)).forEach(([k,n])=>res.push(['Circuitos',`<button class="row" data-tsr="ct|${k}"><div class="tile">📋</div><div class="txt"><div class="t1">${hl(n,q)}</div><div class="t2">Plantilla</div></div></button>`]));
-  S.alarms.filter(a=>m((a.label||'Alarma')+' '+a.t)).forEach(a=>res.push(['Alarmas',`<button class="row" data-tsr="al|${a.id}"><div class="tile">⏰</div><div class="txt"><div class="t1">${hl(a.label||'Alarma',q)} · ${a.t}</div><div class="t2">${daysTxt(a.days)}${a.on?'':' · desactivada'}</div></div></button>`]));
+  S.alarms.filter(a=>m((a.label||'Alarma')+' '+a.t)).forEach(a=>res.push(['Alarmas',`<button class="row" data-tsr="al|${a.id}"><div class="tile">⏰</div><div class="txt"><div class="t1">${hl(a.label||'Alarma',q)} · ${esc(a.t)}</div><div class="t2">${daysTxt(a.days)}${a.on?'':' · desactivada'}</div></div></button>`]));
   let h='',g='';res.forEach(([grp,html])=>{if(grp!==g){h+=`<div class="ts-g">${grp}</div>`;g=grp}h+=html});$('ts-res').innerHTML=h||'<div class="ts-none">Nada con ese nombre</div>'}
 $('ts-q').addEventListener('input',runTSearch);
 $('ts-q').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing&&$('ts-q').value.trim()){e.preventDefault();$('ts-res').querySelector('[data-tsr]')?.click()}});
@@ -6728,7 +6750,7 @@ const dateChip=e=>{if(!e.date)return'';const d=fromKey(e.date),tk=dk(new Date())
 function taskRow(e){
   return `<div class="trow${e.done?' done':''}" data-ev="${e.id}"><button class="tcheck" data-tcheck="${e.id}" style="${e.color?`border-color:${e.color};${e.done?`background:${e.color};color:${txtOn(e.color)}`:''}`:''}" aria-label="${e.done?'Marcar como pendiente':'Marcar como hecha'}">${e.done?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>':''}</button>
     <div class="txt"><div class="t1">${esc(e.title)}</div>${e.notes?`<div class="t2">${esc(e.notes)}</div>`:''}${dateChip(e)}</div>
-    ${e.img?`<img class="tthumb" alt="" src="${getImg(e.id)||''}">`:''}
+    ${e.img?`<img class="tthumb" alt="" src="${safeSrc(getImg(e.id))}">`:''}
     ${e.done?'':`<button class="tstar" data-tstar="${e.id}" aria-pressed="${!!e.star}" aria-label="Destacar">${e.star?STAR:STAR_O}</button>`}</div>`;
 }
 function renderTasks(){
@@ -6796,7 +6818,7 @@ function runSearch(){
       title:hl(e.title,q),sub:(dt?cap(fromKey(dt).toLocaleDateString(LOC,{weekday:'long',day:'numeric',month:'long',year:'numeric'}))+(e.start?' · '+e.start:''):'Sin fecha')+(e.rec?' · ↻':'')+(l?' · '+esc(l.name):'')+(e.notes&&norm(e.notes).includes(q)?' · '+hl(e.notes,q):''),act:dt?{day:dt}:{list:e.list||'default'},img:e.img?e.id:null})}});
   S.log.forEach(l=>{if(isTimeLog(l)&&(norm(l.title).includes(q)||norm(l.detail).includes(q)||norm(ACT_NAMES[l.type]).includes(q))){const d=new Date(l.at);
     res.push({g:'Actividad registrada',k:dk(d),t:hm(d),ic:ICONS[l.type],cls:'k-act',title:esc(ACT_NAMES[l.type])+' · '+hl(l.title,q),sub:cap(d.toLocaleDateString(LOC,{weekday:'long',day:'numeric',month:'long'}))+' · '+hm(d)+' · '+hl(l.detail,q),act:{day:dk(d)}})}});
-  S.alarms.forEach(a=>{if(norm(a.label).includes(q)||a.t.includes(raw)){res.push({g:'Alarmas',k:'',t:a.t,ic:ICONS.alarm,cls:'k-act',title:a.t+' · '+hl(a.label||'Alarma',q),sub:daysTxt(a.days)+(a.on?'':' · desactivada'),act:{alarm:1}})}});
+  S.alarms.forEach(a=>{if(norm(a.label).includes(q)||a.t.includes(raw)){res.push({g:'Alarmas',k:'',t:esc(a.t),ic:ICONS.alarm,cls:'k-act',title:esc(a.t)+' · '+hl(a.label||'Alarma',q),sub:daysTxt(a.days)+(a.on?'':' · desactivada'),act:{alarm:1}})}});
   S.notes.forEach(n=>{if(norm(n.title).includes(q)||norm(n.body).includes(q))res.push({g:'Notas',k:'',t:'',ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>',cls:'k-task',title:hl(n.title||'Sin título',q),sub:(n.folder?esc(n.folder)+' · ':'')+nAgo(n.updated),act:{note:n.id}})});
   S.lists.forEach(l=>{if(norm(l.name).includes(q))res.push({g:'Listas',k:'',t:'',ic:ICONS.task,cls:'k-task',title:hl(l.name,q),sub:agEvents().filter(e=>e.kind==='task'&&e.list===l.id&&!e.done).length+' pendientes',act:{list:l.id}})});
   if(!res.length){$('sr-res').innerHTML=`<div class="row solo"><div class="txt empty">Nada coincide con "${esc(raw)}".</div></div>`;return}
@@ -6804,7 +6826,7 @@ function runSearch(){
   res.forEach(r=>(groups[r.g]=groups[r.g]||[]).push(r));
   const sortG=(g,a)=>g==='Próximos'?a.sort((x,y)=>(x.k+x.t).localeCompare(y.k+y.t)):a.sort((x,y)=>(y.k+y.t).localeCompare(x.k+x.t));
   window._sr=[];
-  $('sr-res').innerHTML=order.filter(g=>groups[g]).map(g=>`<div class="sr-group">${g} · ${groups[g].length}</div>`+sortG(g,groups[g]).slice(0,40).map(r=>{window._sr.push(r.act);return `<button class="ag-item ${r.cls}" data-sr="${window._sr.length-1}"><span class="ag-ic">${r.ic}</span><span class="txt"><span class="t1" style="display:block">${r.title}</span><span class="t2" style="display:block">${r.sub}</span></span>${r.img?`<img class="tthumb" alt="" src="${getImg(r.img)||''}">`:''}</button>`}).join('')).join('');
+  $('sr-res').innerHTML=order.filter(g=>groups[g]).map(g=>`<div class="sr-group">${g} · ${groups[g].length}</div>`+sortG(g,groups[g]).slice(0,40).map(r=>{window._sr.push(r.act);return `<button class="ag-item ${r.cls}" data-sr="${window._sr.length-1}"><span class="ag-ic">${r.ic}</span><span class="txt"><span class="t1" style="display:block">${r.title}</span><span class="t2" style="display:block">${r.sub}</span></span>${r.img?`<img class="tthumb" alt="" src="${safeSrc(getImg(r.img))}">`:''}</button>`}).join('')).join('');
 }
 $('sr-q').addEventListener('input',runSearch);
 $('sr-close').onclick=()=>$('searchview').hidden=true;
@@ -6864,19 +6886,23 @@ function backlinks(n){return S.notes.filter(o=>o!==n&&linksOf(o).some(t=>norm(t)
 
 /* --- Markdown --- */
 function inl(t){
-  const codes=[];t=t.replace(/`([^`]+)`/g,(_,c)=>{codes.push(c);return '\u0000'+(codes.length-1)+'\u0000'});
+  /* Cada trozo de HTML generado (imágenes, enlaces, spans) se aparta con una marca: si no, una sustitución posterior podía empezar
+     dentro del src o el href que acababa de crear otra y meter atributos nuevos (un onerror, por ejemplo) */
+  const codes=[],H=[],keep=h=>'\u0001'+(H.push(h)-1)+'\u0001';t=String(t).replace(/[\u0000\u0001]/g,'');
+  t=t.replace(/`([^`]+)`/g,(_,c)=>{codes.push(c);return '\u0000'+(codes.length-1)+'\u0000'});
   t=esc(t);
-  t=t.replace(/!\[\[([^\]|]+?)(?:\|(\d+))?\]\]/g,(_,nm,w)=>{const a=S.atts.find(x=>x.name===nm.trim()||x.name.replace(/\.\w+$/,'')===nm.trim());return a?attEmbedHTML(a,w):`<span class="wl missing">${nm}</span>`});
-  t=t.replace(/!\[([^\]]*)\]\(img:([\w-]+)\)/g,(_,a,id)=>{const d=getImg(id);return d?`<img alt="${a}" src="${d}">`:''});
-  t=t.replace(/!\[([^\]]*)\]\((https?:[^)\s]+)\)/g,'<img alt="$1" src="$2">');
+  t=t.replace(/!\[\[([^\]|]+?)(?:\|(\d+))?\]\]/g,(_,nm,w)=>{const a=S.atts.find(x=>x.name===nm.trim()||x.name.replace(/\.\w+$/,'')===nm.trim());return keep(a?attEmbedHTML(a,w):`<span class="wl missing">${nm}</span>`)});
+  t=t.replace(/!\[([^\]\u0000\u0001]*)\]\(img:([\w-]+)\)/g,(_,a,id)=>{const d=safeSrc(getImg(id));return d?keep(`<img alt="${a}" src="${d}">`):''});
+  t=t.replace(/!\[([^\]\u0000\u0001]*)\]\((https?:[^)\s\u0000\u0001]+)\)/g,(_,a,u)=>keep(`<img alt="${a}" src="${u}">`));
   /* Tamaño y color por tramos: <span style="font-size:1.5em;color:#f00">. Solo esas dos propiedades, y también se ve en Obsidian */
-  for(let i=0,prev;i<4&&prev!==t;i++){prev=t;t=t.replace(/&lt;span style=&quot;((?:font-size:[\d.]+em|color:#[0-9a-fA-F]{3,8})(?:;(?:font-size:[\d.]+em|color:#[0-9a-fA-F]{3,8}))*)&quot;&gt;((?:(?!&lt;span)[\s\S])*?)&lt;\/span&gt;/g,'<span style="$1">$2</span>')}
-  t=t.replace(/\[\[([^\]\|#\n]+)(#[^\]\|\n]*)?(?:\|([^\]\n]+))?\]\]/g,(_,ti,h,al)=>{const ex=nfind(ti.trim());return `<a class="wl${ex?'':' missing'}" data-wl="${ti.trim().replace(/"/g,'&quot;')}">${al||ti}</a>`});
-  t=t.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+  for(let i=0,prev;i<4&&prev!==t;i++){prev=t;t=t.replace(/&lt;span style=&quot;((?:font-size:[\d.]+em|color:#[0-9a-fA-F]{3,8})(?:;(?:font-size:[\d.]+em|color:#[0-9a-fA-F]{3,8}))*)&quot;&gt;((?:(?!&lt;span)[\s\S])*?)&lt;\/span&gt;/g,(_,st,x)=>keep('<span style="'+st+'">')+x+keep('</span>'))}
+  t=t.replace(/\[\[([^\]\|#\n\u0000\u0001]+)(#[^\]\|\n\u0000\u0001]*)?(?:\|([^\]\n]+))?\]\]/g,(_,ti,h,al)=>{const ex=nfind(ti.trim());return keep(`<a class="wl${ex?'':' missing'}" data-wl="${ti.trim().replace(/"/g,'&quot;')}">`)+(al||ti)+keep('</a>')});
+  t=t.replace(/\[([^\]]+)\]\((https?:[^)\s\u0000\u0001]+)\)/g,(_,x,u)=>keep(`<a href="${u}" target="_blank" rel="noopener">`)+x+keep('</a>'));
   t=t.replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/__([^_]+)__/g,'<b>$1</b>');
   t=t.replace(/(^|[^*])\*([^*\s][^*]*)\*/g,'$1<i>$2</i>').replace(/(^|\s)_([^_]+)_(?=\s|$|[.,;:!?])/g,'$1<i>$2</i>');
   t=t.replace(/~~([^~]+)~~/g,'<s>$1</s>').replace(/==([^=]+)==/g,'<mark>$1</mark>');
   t=t.replace(/(^|[\s(])#([\p{L}\p{N}_\-\/]+)/gu,(m,p,g)=>/^\d+$/.test(g)?m:`${p}<a class="tag" data-tag="${g.toLowerCase()}">#${g}</a>`);
+  t=t.replace(/\u0001(\d+)\u0001/g,(_,i)=>H[+i]||'');
   t=t.replace(/\u0000(\d+)\u0000/g,(_,i)=>`<code>${esc(codes[+i])}</code>`);
   return t;
 }
@@ -7075,7 +7101,7 @@ function renderNoteCol(){if(!notes3())return;const f=vlFolder(),L=$('vn-list'),a
   const snip=n=>isCanvas(n)?T('Lienzo'):(n.body||'').slice(0,240).replace(/<[^>]+>/g,'').replace(/[#*_`>~\[\]-]+/g,' ').replace(/\s+/g,' ').trim();
   const rows=items.map(x=>{const isN=x.title!=null,k=isN?'n:':'a:';
     if(obRenaming===k+x.id)return `<div class="vl-row"><input class="ob-edit" id="ob-edit" value="${esc(isN?x.title:x.name.replace(/\.\w+$/,''))}" data-kind="${isN?'n':'a'}" data-ref="${x.id}" aria-label="Nombre"></div>`;
-    return `<button class="vl-row${isN&&S.obActive===x.id?' on':''}${obNew.has(x.id)?' ob-new':''}" ${isN?`data-note="${x.id}"`:`data-att="${x.id}"`}><b${isN&&x.color?` style="color:${x.color}"`:''}>${esc(isN?x.title||'Sin título':x.name)}</b><span><i>${date(x.updated||x.created)}</i>${esc([f==='*'&&x.folder?baseName(x.folder):'',isN?snip(x):''].filter(Boolean).join(' · '))}</span></button>`}).join('');
+    return `<button class="vl-row${isN&&S.obActive===x.id?' on':''}${obNew.has(x.id)?' ob-new':''}" ${isN?`data-note="${x.id}"`:`data-att="${x.id}"`}><b${isN&&cssColor(x.color)?` style="color:${cssColor(x.color)}"`:''}>${esc(isN?x.title||'Sin título':x.name)}</b><span><i>${date(x.updated||x.created)}</i>${esc([f==='*'&&x.folder?baseName(x.folder):'',isN?snip(x):''].filter(Boolean).join(' · '))}</span></button>`}).join('');
   /* Subcarpetas directas arriba, como en el árbol: el contador de la carpeta ya las incluye */
   const subs=f==='*'||f===''?[]:sortFolders(allFolders().filter(x=>parentOf(x)===f),fModeFor(f)),cnt=items.length+subs.length;
   const srows=subs.map(x=>{const c=[...S.notes,...S.atts].filter(y=>(y.folder||'')===x||(y.folder||'').startsWith(x+'/')).length;return `<button class="vl-row vl-sub" data-fall="${esc(x)}"><b><span class="vn-ftile"${folderColor(x)?` style="color:${folderColor(x)}"`:''}>${OB_IC.folder}</span>${esc(baseName(x))}</b><span>${c} ${c===1?T('elemento'):T('elementos')}</span></button>`}).join('');
@@ -7742,10 +7768,10 @@ const V_LOCS=[
 function vPC(s){return document.body.classList.contains('desk')?s.replace(/Teléfono/g,'Equipo').replace(/del (móvil|teléfono)/g,'del equipo').replace(/el teléfono|el móvil/g,'este equipo').replace('Android la borra','Se borra').replace('en otro móvil u ordenador','en otro ordenador o en el móvil'):s}
 let VN={name:'',color:V_COLORS[0],loc:'device',dir:null};
 const vInit=n=>((n||'?').trim()[0]||'?').toUpperCase();
-const vColor=v=>v&&v.color||'var(--accent)';
+const vColor=v=>v&&cssColor(v.color)||'var(--accent)';
 function vLocText(v){const gh=v&&S.gh&&S.gh.links&&S.gh.links[v.id],d=v&&v.dir;
   return vPC(d?'En el teléfono · '+d.name:'Solo en Temvra')+(gh?' · GitHub '+gh.repo:'')}
-const vBadge=(v,cls)=>v&&v.img?`<span class="vbadge vimg${cls?' '+cls:''}" style="background-image:url(${v.img})"></span>`:`<span class="vbadge${cls?' '+cls:''}" style="--vc:${vColor(v)}">${esc(vInit(v&&v.name))}</span>`;
+const vBadge=(v,cls)=>v&&safeSrc(v.img)?`<span class="vbadge vimg${cls?' '+cls:''}" style="background-image:url('${safeSrc(v.img)}')"></span>`:`<span class="vbadge${cls?' '+cls:''}" style="--vc:${vColor(v)}">${esc(vInit(v&&v.name))}</span>`;
 function openVaultNew(){VN={name:'',color:V_COLORS[S.vaults.length%V_COLORS.length],loc:'device',dir:null};$('vnw-name').value='';renderVaultNew();$('vault-new').hidden=false;setTimeout(()=>$('vnw-name').focus(),80)}
 function vnErr(){const n=VN.name.trim();if(!n)return '';if(/[\\/:*?"<>|]/.test(n))return 'El nombre no puede llevar \\ / : * ? " < > |';if(n.startsWith('.'))return 'El nombre no puede empezar por un punto';if(S.vaults.some(v=>norm(v.name)===norm(n)))return 'Ya tienes una bóveda con ese nombre';return ''}
 function renderVaultNew(){const n=VN.name.trim(),err=vnErr(),B=dirB();
@@ -7968,7 +7994,7 @@ const dirV=()=>S.vaults.find(v=>v.id===S.curVault);
 const dirOwner=(kind,root,not)=>S.vaults.find(v=>v!==not&&v.dir&&v.dir.kind===kind&&v.dir.root===root);
 const DIR_TXT=/\.(md|markdown|canvas)$/i,DIR_IMG=/\.(png|jpe?g|gif|webp)$/i;
 /* Nombres que Windows o Android no admiten (una carpeta con «:» o «?», o que acaba en punto o espacio): esos archivos no se escriben en la carpeta */
-const dirBad=p=>p.split('/').some(x=>!x||/[\\:*?"<>|\x00-\x1f]/.test(x)||/[. ]$/.test(x));
+const dirBad=p=>p.split('/').some(x=>!x||/^\./.test(x)||/[\\:*?"<>|\x00-\x1f]/.test(x)||/[. ]$/.test(x));
 let dirBusy=false,dirAgain=false,dirSelf=false,dirT=0,dirT0=0,dirWhy='',dirFullT=0;
 /* «cambio» solo mira la carpeta si algo cambió aquí; «volver», «carpeta», «reloj», «mano» y «primera» la leen siempre */
 function dirSoon(ms,why){why=why||'cambio';if(!dirWhy||why!=='cambio')dirWhy=why;const t=Date.now();if(!dirT)dirT0=t;clearTimeout(dirT);
@@ -8133,7 +8159,7 @@ async function apRemote(L){const ref=await ghApi(`/repos/${L.repo}/git/ref/heads
   if((root.tree||[]).some(x=>x.type==='blob'&&GH_CODE_MARK.test(x.path)||x.type==='tree'&&/^(android|ios|src|\.github)$/.test(x.path))){L.code=true;save();throw new Error('CODE')}
   if(t){const sub=await ghApi(`/repos/${L.repo}/git/trees/${t.sha}?recursive=1`);(sub.tree||[]).forEach(x=>{if(x.type==='blob'&&/\.json$/.test(x.path))rem[x.path]=x.sha})}
   return {head,tree:c.tree.sha,rem}}
-function apApply(p,obj){const A=apA(),f=APF.find(x=>x[0]===p);
+function apApply(p,obj){const A=apA(),f=APF.find(x=>x[0]===p);obj=sane(obj);if(obj&&/alarmas\//.test(p)&&!/^\d{1,2}:\d{2}$/.test(obj.t))return false;
   if(f){if(obj){const o=Object.assign({},obj);delete o._at;f[2](o)}}
   else{const m=p.match(/^(.*)\/([^/]+)\.json$/),col=m&&APC.find(x=>x[0]===m[1]);if(!col)return false;
     if(m[2]==='_orden'){if(obj)(apOrdM||(apOrdM={}))[m[1]]=obj.ids||[]}
@@ -8728,7 +8754,7 @@ function startGraph(){
 let selLay=null,layOp=null;
 function renderLayers(){const L=$('ne-layer');if(!curNote){L.innerHTML='';return}
   const ls=(curNote.layers||[]).slice().sort((a,b)=>a.z-b.z);
-  L.innerHTML=ls.map(l=>`<div class="lay${selLay===l.id?' sel':''}" data-lay="${l.id}" style="left:${l.x}%;top:${l.y}px;width:${l.w}%;transform:rotate(${l.r}deg);z-index:${l.z}"><img src="${getImg(l.img)||''}" alt="" draggable="false">${selLay===l.id?'<span class="lh rs" data-h="rs" aria-label="Cambiar tamaño"></span><span class="lh rt" data-h="rt" aria-label="Girar"></span><button class="lh del" data-h="del" aria-label="Eliminar imagen">✕</button><button class="lh up" data-h="up" aria-label="Traer al frente">⤒</button>':''}</div>`).join('');
+  L.innerHTML=ls.map(l=>`<div class="lay${selLay===l.id?' sel':''}" data-lay="${l.id}" style="left:${l.x}%;top:${l.y}px;width:${l.w}%;transform:rotate(${l.r}deg);z-index:${l.z}"><img src="${safeSrc(getImg(l.img))}" alt="" draggable="false">${selLay===l.id?'<span class="lh rs" data-h="rs" aria-label="Cambiar tamaño"></span><span class="lh rt" data-h="rt" aria-label="Girar"></span><button class="lh del" data-h="del" aria-label="Eliminar imagen">✕</button><button class="lh up" data-h="up" aria-label="Traer al frente">⤒</button>':''}</div>`).join('');
 }
 function addFreeImage(){const i=$('lay-file');i.value='';i.click()}
 $('lay-file').addEventListener('change',e=>{const f=e.target.files[0];if(!f||!curNote)return;readImage(f,1400,d=>{
@@ -9342,6 +9368,7 @@ function renderAll(){renderCal();renderAlarms();renderCities();renderClock();ren
 
 /* ================= INICIO ================= */
 applyTheme();applyBg();renderAviso();renderSounds();renderNotifSeg();setLoop(S.loop);setPeriod(S.period);tReset();
+try{['events','appts','alarms','timers','tfolders','myCircuits','myTpl','blockCats','cals','agendas','lists','vaults','notes','atts'].forEach(k=>sane(S[k]));Object.values(S.vaultData||{}).forEach(v=>{sane(v.notes);sane(v.atts)});(S.subs||[]).forEach(x=>sane(x.events))}catch(e){console.warn('sane',e)}
 renderLaps();renderAlarms();renderCities();renderClock();renderSwLaps();show(S.lastTime||'timer');renderWk();$('ring-snooze').textContent='Posponer '+S.snooze+' min';
 applyObPrefs();
 /* Ejemplos cotidianos. Una sola vez: también sustituye a los ejemplos de versiones anteriores, sin tocar lo creado a mano */
@@ -9447,7 +9474,7 @@ function pickImage(max,cb){const el=$('pick-img');el.value='';el.onchange=()=>{c
 function curVaultObj(){return S.vaults.find(v=>v.id===S.curVault)||{}}
 function folderColor(f){return (curVaultObj().fc||{})[f]||''}
 function pickFolderColor(p){pickColor('Color de '+baseName(p),folderColor(p),c=>{const v=curVaultObj();v.fc=v.fc||{};if(c)v.fc[p]=c;else delete v.fc[p];save();renderNotes()})}
-renderNotes=(f=>function(){const r=f.apply(this,arguments);const v=curVaultObj(),t=$('ob-vname-t'),lg=document.querySelector('#ob-vault-btn .vn-logo');if(t)t.style.color=v.titleColor||'';if(lg){lg.classList.toggle('vimg',!!v.img);lg.style.backgroundImage=v.img?`url(${v.img})`:'';if(v.img)lg.textContent=''}return r})(renderNotes);
+renderNotes=(f=>function(){const r=f.apply(this,arguments);const v=curVaultObj(),t=$('ob-vname-t'),lg=document.querySelector('#ob-vault-btn .vn-logo');if(t)t.style.color=v.titleColor||'';if(lg){const vi=safeSrc(v.img);lg.classList.toggle('vimg',!!vi);lg.style.backgroundImage=vi?`url('${vi}')`:'';if(vi)lg.textContent=''}return r})(renderNotes);
 let txN=null,txS=0,txE=0;
 function openTextSheet(n){if(!n)return;txN=n;const ta=$('ne-text'),edit=neEdit&&ta;txS=edit?ta.selectionStart:0;txE=edit?ta.selectionEnd:0;
   const fs=n.fs||S.ob.fontSize;$('tx-fs').value=fs;$('tx-fs-o').textContent=fs+' px';$('tx-note-c').innerHTML=swatches(n.tc,'data-nc');$('tx-sel-c').innerHTML=swatches('','data-sc');
@@ -9543,10 +9570,11 @@ async function shareVault(v){if(v.id!==S.curVault)switchVault(v.id);toast('Prepa
   const blob=await z.generateAsync({type:'blob',compression:'DEFLATE'});shareBlob(safeName(v.name)+'.zip',new Blob([blob],{type:'application/zip'}),v.name,'Te comparto la bóveda «'+v.name+'» de Temvra. Ábrela con la app para añadirla.')}
 async function importVaultZip(file){let Z;try{Z=await JSZipLib()}catch(e){toast('No se pudo cargar el compresor');return}
   let zip;try{zip=await Z.loadAsync(file)}catch(e){toast('El archivo no es válido');return}const mf=zip.file('temvra-vault.json');if(!mf){toast('Este ZIP no es una bóveda de Temvra');return}
-  let d;try{d=JSON.parse(await mf.async('string'))}catch(e){toast('El archivo no es válido');return}
+  let d;try{d=sane(JSON.parse(await mf.async('string')))}catch(e){toast('El archivo no es válido');return}
+  const dots=f=>String(f||'').split('/').map(x=>x.replace(/^[.\s]+/,'').trim()).filter(Boolean).join('/');(d.notes||[]).forEach(n=>{if(n&&n.folder)n.folder=dots(n.folder)});d.folders=(d.folders||[]).map(dots).filter(Boolean);
   obConfirm(`¿Añadir la bóveda «${d.name}» con ${(d.notes||[]).length} notas?`,'Añadir bóveda',async()=>{let name=d.name||'Bóveda',i=2;while(S.vaults.some(x=>norm(x.name)===norm(name)))name=d.name+' '+i++;
     const v=createVault(name);Object.assign(v,{color:d.color,titleColor:d.titleColor,img:d.img,fc:d.fc||{}});const atts=[];
-    for(const a of d.atts||[]){const f=zip.file('atts/'+a.id);if(!f)continue;const id='a'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);setImg(id,await f.async('string'));atts.push(Object.assign({},a,{id}))}
+    for(const a of d.atts||[]){const f=zip.file('atts/'+a.id);if(!f)continue;const id='a'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),im=safeSrc(await f.async('string'));if(!im)continue;setImg(id,im);atts.push(Object.assign({},a,{id}))}
     Object.assign(S.vaultData[v.id],{notes:d.notes||[],folders:d.folders||[],atts});save();switchVault(v.id);toast('Bóveda «'+name+'» añadida')})}
 $('vault-file').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)importVaultZip(f)};
 openVaultMgr=(f=>function(){f.apply(this,arguments);$('vmg-vaults').insertAdjacentHTML('beforeend','<button class="btn tonal vmg-imp" id="vmg-import">Importar bóveda recibida</button>');$('vmg-import').onclick=()=>$('vault-file').click()})(openVaultMgr);
@@ -9558,7 +9586,7 @@ function importBytes(nm,mime,a){const isZip=/zip/.test(mime)||/\.zip$/i.test(nm)
   show('cal');const dt=new DataTransfer();dt.items.add(file);const el=$('ics-file');el.files=dt.files;el.dispatchEvent(new Event('change'))}
 /* ===== Notas en móvil: cajón lateral y campo de nota rápida ===== */
 function openNotesDrawer(){const v=curVaultObj(),hid=S.ndHide||[],vis=b=>!hid.includes(b.getAttribute('aria-label')||b.textContent.trim()),tabs=[...$('vn-tabs').querySelectorAll('[data-vtab]')],tools=[...$('ob-tools').querySelectorAll('[data-tool]')].filter(b=>b.dataset.tool!=='new'&&b.dataset.tool!=='scm');
-  $('nd-head').innerHTML=`${vBadge(v)}<button class="nd-v" id="nd-vault" style="${v.titleColor?'color:'+v.titleColor:''}"><b>${esc(v.name||'Notas')}</b> ▾<br><small>${S.notes.length} ${S.notes.length===1?'nota':'notas'}</small></button>`;
+  $('nd-head').innerHTML=`${vBadge(v)}<button class="nd-v" id="nd-vault" style="${cssColor(v.titleColor)?'color:'+cssColor(v.titleColor):''}"><b>${esc(v.name||'Notas')}</b> ▾<br><small>${S.notes.length} ${S.notes.length===1?'nota':'notas'}</small></button>`;
   const row=(b,k)=>{const lab=b.getAttribute('aria-label')||b.textContent.trim();return `<div class="nd-item"><button class="nd-row${b.classList.contains('on')||b.getAttribute('aria-selected')==='true'?' on':''}" data-fw="${k}">${b.querySelector('svg')?b.querySelector('svg').outerHTML:''}<span>${esc(lab)}</span></button><button class="nd-x" data-hide="${esc(lab)}" aria-label="Quitar ${esc(lab)}">×</button></div>`};
   const tv=tabs.map((b,i)=>[b,'t'+i]).filter(([b])=>vis(b)),av=tools.map((b,i)=>[b,'a'+i]).filter(([b])=>vis(b));
   $('nd-body').innerHTML=tv.map(([b,k])=>row(b,k)).join('')+(av.length?'<div class="nd-sep"></div><div class="nd-t">Acciones</div>':'')+av.map(([b,k])=>row(b,k)).join('')+(hid.length?'<div class="nd-sep"></div><button class="nd-row" data-restore><span>Recuperar lo que has quitado ('+hid.length+')</span></button>':'');

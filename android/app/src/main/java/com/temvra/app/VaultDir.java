@@ -141,6 +141,15 @@ final class VaultDir {
         return id != null ? id : find(c, tree, path);
     }
 
+    /**
+     * Rutas que llegan de la página: nunca dentro de algo oculto (.obsidian, .git, .trash…), porque otra app podría ejecutar lo que
+     * se escribiera ahí. La papelera interna (.trash) sí la usa trash() por su cuenta.
+     */
+    static String visible(String path) throws Exception {
+        if (path != null) for (String part : path.split("/")) if (part.startsWith(".")) throw new Exception("Ruta no válida");
+        return path;
+    }
+
     /** Crea las carpetas que falten y devuelve el id de la última. */
     static String ensureDir(Context c, Uri tree, String path) throws Exception {
         String id = rootId(tree);

@@ -16,5 +16,10 @@
     "SystemBars": {
       "insetsHandling": "disable"
     }
+  },
+  "cordova": {
+    "preferences": {
+      "DisableDeploy": "true"
+    }
   }
 }

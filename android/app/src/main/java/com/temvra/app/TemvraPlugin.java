@@ -510,6 +510,7 @@ public class TemvraPlugin extends Plugin {
         if (BuildConfig.PLAY) { call.reject("play"); return; }
         final Context c = getContext();
         final String url = call.getString("url", ""), token = call.getString("token", ""), name = call.getString("name", "Temvra.apk");
+        if (!Updater.validAsset(url, name)) { call.reject("url"); return; }
         new Thread(() -> {
             try {
                 java.io.File f = Updater.download(c, url, token, name);
@@ -530,6 +531,7 @@ public class TemvraPlugin extends Plugin {
         Context c = getContext();
         java.io.File f = new java.io.File(call.getString("path", Updater.sp(c).getString("apkPath", "")));
         if (!f.exists()) { call.reject("missing"); return; }
+        if (!Updater.trusted(c, f)) { call.reject("untrusted"); return; }
         if (!Updater.canInstall(c)) {
             if (Build.VERSION.SDK_INT >= 26) {
                 try { getActivity().startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + c.getPackageName()))); } catch (Exception ignored) {}
@@ -608,32 +610,32 @@ public class TemvraPlugin extends Plugin {
     public void dirRead(PluginCall call) {
         final String p = call.getString("path", "");
         final boolean bin = Boolean.TRUE.equals(call.getBoolean("bin", false));
-        dirDo(call, t -> VaultDir.read(getContext(), t, p, bin));
+        dirDo(call, t -> VaultDir.read(getContext(), t, VaultDir.visible(p), bin));
     }
 
     @PluginMethod
     public void dirWrite(PluginCall call) {
         final String p = call.getString("path", ""), d = call.getString("data", "");
         final boolean bin = Boolean.TRUE.equals(call.getBoolean("bin", false));
-        dirDo(call, t -> VaultDir.write(getContext(), t, p, d, bin));
+        dirDo(call, t -> VaultDir.write(getContext(), t, VaultDir.visible(p), d, bin));
     }
 
     @PluginMethod
     public void dirTrash(PluginCall call) {
         final String p = call.getString("path", "");
-        dirDo(call, t -> { VaultDir.trash(getContext(), t, p); return null; });
+        dirDo(call, t -> { VaultDir.trash(getContext(), t, VaultDir.visible(p)); return null; });
     }
 
     @PluginMethod
     public void dirMove(PluginCall call) {
         final String a = call.getString("from", ""), b = call.getString("to", "");
-        dirDo(call, t -> VaultDir.move(getContext(), t, a, b));
+        dirDo(call, t -> VaultDir.move(getContext(), t, VaultDir.visible(a), VaultDir.visible(b)));
     }
 
     @PluginMethod
     public void dirMkdir(PluginCall call) {
         final String p = call.getString("path", "");
-        dirDo(call, t -> { VaultDir.ensureDir(getContext(), t, p); return null; });
+        dirDo(call, t -> { VaultDir.ensureDir(getContext(), t, VaultDir.visible(p)); return null; });
     }
 }
 
