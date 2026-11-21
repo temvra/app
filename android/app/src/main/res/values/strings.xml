@@ -20,4 +20,5 @@
     <string name="widget_notes_desc">Árbol de carpetas y notas de la bóveda que elijas</string>
     <string name="widget_pulse_label">Temvra · Ahora</string>
     <string name="widget_pulse_desc">La hora con segundos, el rayo del día y cuánto falta para tus dos próximos eventos</string>
+    <string name="focus_guard_desc">Enfoque: cuando se acaba el tiempo que das a las apps que te distraen (en una sesión de enfoque o en el límite por hora), Temvra vuelve al escritorio y te lo dice. Solo mira qué app se abre; no lee lo que hay en la pantalla y nada sale del móvil.</string>
 </resources>

@@ -325,6 +325,17 @@ public class TemvraPlugin extends Plugin {
         Uri pkg = Uri.parse("package:" + c.getPackageName());
         Intent it;
         if ("fullScreen".equals(which) && Build.VERSION.SDK_INT >= 34) it = new Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, pkg);
+        // Enfoque: «Acceso a datos de uso» de esta app y su servicio de accesibilidad (si no se puede ir directo, la lista)
+        else if ("usage".equals(which)) {
+            it = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS, pkg);
+            if (it.resolveActivity(c.getPackageManager()) == null) it = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
+        } else if ("guard".equals(which)) {
+            it = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
+            if (Build.VERSION.SDK_INT >= 31) {
+                Intent d = new Intent("android.settings.ACCESSIBILITY_DETAILS_SETTINGS").putExtra(Intent.EXTRA_COMPONENT_NAME, new android.content.ComponentName(c, FocusGuard.class).flattenToString());
+                if (d.resolveActivity(c.getPackageManager()) != null) it = d;
+            }
+        }
         // En Google Play no se pide la exención directamente: se abre la lista de apps para que la quite quien quiera
         else if ("battery".equals(which)) it = BuildConfig.PLAY ? new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS) : new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, pkg);
         else if ("channels".equals(which) || "notifications".equals(which)) it = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, c.getPackageName());
@@ -332,9 +343,84 @@ public class TemvraPlugin extends Plugin {
         try {
             getActivity().startActivity(it);
         } catch (Exception e) {
-            getActivity().startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, pkg));
+            try {
+                getActivity().startActivity("guard".equals(which) ? new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS) : "usage".equals(which) ? new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS) : new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, pkg));
+            } catch (Exception ignored) {
+                getActivity().startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, pkg));
+            }
         }
         call.resolve();
+    }
+
+    /* ---------------- Enfoque (Focus.java, FocusGuard.java) ---------------- */
+
+    /** Permisos de Enfoque. can: esta versión trae el bloqueo de apps (la de Google Play no). */
+    @PluginMethod
+    public void focusStatus(PluginCall call) {
+        Context c = getContext();
+        JSObject out = new JSObject();
+        out.put("can", !BuildConfig.PLAY);
+        out.put("usage", Focus.hasUsage(c));
+        out.put("guard", Focus.guardOn(c));
+        out.put("live", FocusGuard.live != null);
+        call.resolve(out);
+    }
+
+    /** Apps del escritorio con su icono (PNG de 64 px en base64) para elegir las que distraen. */
+    @PluginMethod
+    public void focusApps(PluginCall call) {
+        Context c = getContext();
+        new Thread(() -> {
+            JSObject out = new JSObject();
+            try { out.put("apps", Focus.launchables(c, true)); } catch (Exception e) { out.put("apps", new JSONArray()); }
+            call.resolve(out);
+        }).start();
+    }
+
+    /** Tiempo delante de cada app entre from y to (ms), solo de las apps con icono en el escritorio. */
+    @PluginMethod
+    public void focusUsage(PluginCall call) {
+        Context c = getContext();
+        long now = System.currentTimeMillis();
+        long from = call.getLong("from", now - 3600_000L), to = Math.min(now, call.getLong("to", now));
+        new Thread(() -> {
+            JSObject out = new JSObject();
+            boolean ok = Focus.hasUsage(c);
+            out.put("ok", ok);
+            JSONArray list = new JSONArray();
+            if (ok) {
+                String[] fg = new String[1];
+                java.util.Map<String, Long> m = Focus.usage(c, from, to, fg);
+                android.content.pm.PackageManager pm = c.getPackageManager();
+                String home = Focus.homePkg(c);
+                for (java.util.Map.Entry<String, Long> e : m.entrySet()) {
+                    String p = e.getKey();
+                    if (p.equals(c.getPackageName()) || p.equals(home) || pm.getLaunchIntentForPackage(p) == null) continue;
+                    try {
+                        JSONObject o = new JSONObject();
+                        o.put("pkg", p);
+                        o.put("label", Focus.label(c, p));
+                        o.put("ms", e.getValue());
+                        list.put(o);
+                    } catch (Exception ignored) {}
+                }
+                out.put("fg", fg[0]);
+            }
+            out.put("apps", list);
+            call.resolve(out);
+        }).start();
+    }
+
+    /** Configuración de Enfoque: apps que distraen, sesión en marcha, límite por hora y textos traducidos. */
+    @PluginMethod
+    public void focusSet(PluginCall call) {
+        try {
+            JSObject cfg = call.getObject("cfg", new JSObject());
+            Focus.save(getContext(), new JSONObject(cfg.toString()));
+            call.resolve();
+        } catch (Exception e) {
+            call.reject(e.getMessage());
+        }
     }
 
     /** Color de la zona de las barras del sistema: el del tema, para que los iconos no se fundan con el fondo. */

@@ -250,6 +250,23 @@ async function repeticion(a){
     S.regs=S.regs.filter(x=>x.id!=='rqa');return o})()`);
   ok(r.boton==='Cada día'&&!r.fuera&&r.rep==='[1,3,5]'&&r.boton2==='lun, mié, vie'&&r.dias==='1,3,5'&&r.filas>=6&&r.nov30,'registros: repetir filas los días elegidos, también los pasados sin abrir la app',r)}
 
+/* Enfoque: la hoja calcula el tiempo para las apps que distraen, la sesión avisa al terminar y se guarda al acabar aunque la app
+   estuviera cerrada; una que se corta en menos de un minuto no cuenta. Y la app arranca bien con Enfoque abierto */
+async function enfoque(a){
+  const r=await a.ev(`(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms)),S=VTAPI.state(),o={temprano:new Date().getHours()===0};
+    document.querySelector('.nav [data-view=cal]').click();await w(300);document.querySelector('.nav [data-view=time]').click();await w(400);document.getElementById('tab-focus').click();await w(600);
+    o.vista=!document.getElementById('v-focus').hidden&&!!document.querySelector('#v-focus .fc-stats');
+    document.getElementById('fab1').click();await w(600);document.querySelector('#obs-body [data-pct="25"]').click();await w(100);o.texto=document.getElementById('fcs-allow').textContent;
+    document.getElementById('fcs-go').click();await w(600);const c=S.focus.cur;o.min=c&&(c.end-c.start)/6e4;o.boton=document.getElementById('fab1').getAttribute('aria-label');o.aviso=!!c&&VTAPI.upcoming(1).some(x=>x.key==='fc|e|'+c.id&&x.at===c.end);
+    document.getElementById('fab1').click();await w(500);document.querySelector('#obs-body [data-i="0"]').click();await w(500);o.corta=S.focus.sessions.length;
+    const t=Date.now();S.focus.cur={id:'qa',start:t-50*6e4,end:t-5*6e4,allow:10};document.getElementById('tab-timer').click();await w(300);document.getElementById('tab-focus').click();await w(700);
+    o.hecha=S.focus.sessions.length===1&&S.focus.sessions[0].st==='done'&&!S.focus.cur;o.cifras=document.querySelector('.fc-nums').innerText.replace(/\\n/g,' ');o.semana=document.querySelector('.fc-week .fc-acc').textContent;
+    return o})()`);
+  ok(r.vista&&r.texto==='11 min 15 s para apps que distraen'&&r.min===45&&r.boton==='Terminar sesión de enfoque'&&r.aviso&&r.corta===0&&r.hecha&&(r.temprano||/^1 Sesión 45 min/.test(r.cifras)&&r.semana==='1 de 7 días con enfoque'),'enfoque: empezar, avisar al terminar, guardar la sesión y estadísticas',r);
+  await a.recarga();const b=await a.ev(`({vista:!document.getElementById('v-focus').hidden,lleno:document.getElementById('v-focus').innerHTML.length>500})`);
+  ok(b.vista&&b.lleno,'enfoque: la app arranca bien con Enfoque abierto',b);
+  await a.ev(`(async()=>{const S=VTAPI.state();delete S.focus;S.lastTime='timer';document.getElementById('tab-timer').click();await new Promise(r=>setTimeout(r,300))})()`)}
+
 /* Móvil: al tocar en mitad de una nota larga y escribir, la nota no salta y el cursor queda por encima de la barra de formato */
 async function salto(a){
   const largo=Array.from({length:45},(_,i)=>'Línea '+(i+1)+' de una nota de prueba bastante larga para que haga falta desplazarse.').join('\\n');
@@ -325,7 +342,7 @@ try{
   console.log('— Móvil 412×915');
   const mv=await abre(9702,[412,915],true);
   await vacio(mv,false);ok(!await mv.ev(`document.body.classList.contains('deskcal')`),'móvil: sin panel de días');
-  await sinVisita(mv);await centrar(mv);await aro(mv,false);await bloque(mv);await emojis(mv);await repeticion(mv);await salto(mv);await migracion(mv);
+  await sinVisita(mv);await centrar(mv);await aro(mv,false);await bloque(mv);await emojis(mv);await repeticion(mv);await salto(mv);await enfoque(mv);await migracion(mv);
   ok(!mv.errores.length,'móvil: sin errores de JavaScript',mv.errores);mv.cierra();
 }catch(e){fallos++;console.error('✗ Prueba interrumpida:',e.message)}
 finally{abiertas.forEach(a=>a.cierra());await sleep(400);if(!yaHabia)try{fs.unlinkSync(enlace)}catch(e){}for(const d of temporales)try{fs.rmSync(d,{recursive:true,force:true})}catch(e){}}

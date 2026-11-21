@@ -116,6 +116,23 @@
             android:theme="@style/AppTheme.NoActionBar"
             android:turnScreenOn="true" />
 
+        <!-- Enfoque: bloquear las apps que distraen cuando se acaba su tiempo (solo ve qué app pasa delante) -->
+        <service
+            android:name=".FocusGuard"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter><action android:name="android.accessibilityservice.AccessibilityService" /></intent-filter>
+            <meta-data android:name="android.accessibilityservice" android:resource="@xml/focus_guard" />
+        </service>
+        <activity
+            android:name=".FocusBlock"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:taskAffinity=""
+            android:theme="@style/AppTheme.NoActionBar" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -144,4 +161,14 @@
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <!-- Instalar la versión nueva descargada desde GitHub (Android pide confirmarlo cada vez) -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- Enfoque: cuánto tiempo se usa cada app (lo concede el usuario en «Acceso a datos de uso») -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
+
+    <!-- Enfoque: ver las apps del escritorio para elegir las que distraen -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
 </manifest>

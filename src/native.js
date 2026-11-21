@@ -27,6 +27,11 @@
     saveOwnAudio(data){if(TV&&data)TV.saveOwnAudio({data}).catch(()=>{})},
     permStatus(){return TV?TV.permStatus():Promise.resolve(null)},
     openPerm(which){if(TV)TV.openPerm({which}).catch(()=>{})},
+    /* Enfoque: permisos, apps del escritorio, tiempo de uso y configuración del bloqueo (Focus.java) */
+    focusStatus(){return TV?TV.focusStatus():Promise.resolve(null)},
+    focusApps(){return TV?TV.focusApps():Promise.resolve({apps:[]})},
+    focusUsage(from,to){return TV?TV.focusUsage({from,to}):Promise.resolve({ok:false,apps:[]})},
+    focusSet(cfg){if(TV)TV.focusSet({cfg}).catch(()=>{})},
     askNotifications(){return LN?LN.requestPermissions():Promise.resolve(null)}
   };
   if(TV){TV.addListener('action',e=>{const go=()=>api()?api().timerAction(e.action):setTimeout(go,300);go()});
