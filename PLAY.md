@@ -13,7 +13,7 @@ El paquete va firmado con la clave de subida (la misma del keystore). La primera
 ## 2. Crear la app en Play Console
 - **Crear app** › Nombre: Temvra · Paquete: `com.temvra.app` · App · Gratis.
 - Idioma predeterminado: es el de reserva para quien tenga el móvil en un idioma sin traducir. Añade la ficha traducida a los 10 idiomas de la app (y español de Latinoamérica, `es-419`): Google Play enseña a cada usuario la de su idioma.
-- Categoría: **Productividad**. Correo de contacto: **hola@kelestra.com** (reenvío de Cloudflare a kelestra.studio@gmail.com). Web: https://temvra.github.io hasta que https://temvra.es tenga la web.
+- Categoría: **Productividad**. Correo de contacto: **hola@temvra.es** (Cloudflare lo reenvía a temvraoficial@gmail.com). Web: https://temvra.github.io hasta que https://temvra.es tenga la web.
 
 ## 3. Ficha de Play Store
 Todo está en `fastlane/metadata/android/es-ES/`:
