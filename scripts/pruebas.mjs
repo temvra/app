@@ -5,8 +5,8 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),app=p
 const sleep=ms=>new Promise(r=>setTimeout(r,ms)),temporales=[],abiertas=[];let fallos=0;
 const ok=(c,n,d)=>{console.log((c?'✓ ':'✗ ')+n+(c||d===undefined?'':' → '+JSON.stringify(d)));if(!c)fallos++};
 
-async function abre(puerto,[w,h],movil=false){
-  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'temvra-prueba-'));temporales.push(dir);
+async function abre(puerto,[w,h],movil=false,pre){
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'temvra-prueba-'));temporales.push(dir);if(pre)pre(dir);
   /* La app sigue el idioma del sistema y las pruebas buscan sus textos en español: se fija el español aunque el equipo esté en otro idioma.
      No basta con --lang: en Linux LANGUAGE y LC_ALL mandan sobre él */
   const proc=spawn(path.join(app,'node_modules/.bin/electron'),[app,'--ozone-platform=headless','--password-store=basic','--host-rules=MAP * ~NOTFOUND',`--user-data-dir=${dir}`,`--remote-debugging-port=${puerto}`],{stdio:'ignore',env:{...process.env,LANGUAGE:'es_ES',LC_ALL:'es_ES.UTF-8',LANG:'es_ES.UTF-8'}});
@@ -26,7 +26,7 @@ async function abre(puerto,[w,h],movil=false){
   await send('Runtime.enable');await send('Page.enable');await send('Emulation.setDeviceMetricsOverride',{width:w,height:h,deviceScaleFactor:1,mobile:movil});
   const listo=async()=>{for(let i=0;i<60;i++){try{if(await ev(`typeof VTAPI==='object'&&!!document.querySelector('.nav [data-view=cal]')`))return}catch(e){}await sleep(150)}throw new Error('la app no termina de cargar')};
   const recarga=async()=>{await send('Page.reload');await sleep(400);await listo();await sleep(500)};
-  const a={ev,raton,rueda,tecla,send,errores,recarga,cierra(){try{ws.close()}catch(e){}proc.kill()}};abiertas.push(a);await listo();await sleep(700);return a}
+  const a={ev,raton,rueda,tecla,send,errores,recarga,dir,cierra(){try{ws.close()}catch(e){}proc.kill()}};abiertas.push(a);await listo();await sleep(700);return a}
 
 const agenda=`(async()=>{const a=document.querySelector('.nav [data-view=cal]');if(a.getAttribute('aria-current')!=='page')a.click();await new Promise(r=>setTimeout(r,1000));document.querySelector('#cal-vseg [data-cv=month]').click();await new Promise(r=>setTimeout(r,1300))})()`;
 const toque=`document.querySelector('#cal-vseg [aria-pressed="false"]').click()`;
@@ -287,6 +287,13 @@ async function buscarNota(a){
   await a.tecla('f',2);await sleep(500);const r3=await a.ev(`VTAPI.state().obPanel`);await a.ev(`(()=>{const S=VTAPI.state();S.obPanel='files'})()`);
   ok(r3==='search','notas: sin nota abierta, Ctrl+F abre la búsqueda en todas las notas',{panel:r3})}
 
+/* PC: al arrancar se borran las versiones descargadas de la actual o anteriores, las descargas a medias y lo que no lleva versión;
+   de las más nuevas se queda solo la última. Aquí la app es la 1.0.0 (desktop/package.json) */
+async function limpiezaPC(){const NOM=['Temvra-Personal-0.9.9.AppImage','Temvra-Personal-1.0.0.AppImage','Temvra-Personal-1.0.5.AppImage.part','Temvra-update','Temvra-Personal-1.0.7-Windows.exe','Temvra-Personal-1.0.12.AppImage'];
+  const a=await abre(9703,[900,700],false,dir=>{const u=path.join(dir,'updates');fs.mkdirSync(u,{recursive:true});NOM.forEach(n=>fs.writeFileSync(path.join(u,n),'x'))});
+  const quedan=fs.readdirSync(path.join(a.dir,'updates')).sort();a.cierra();
+  ok(JSON.stringify(quedan)==='["Temvra-Personal-1.0.12.AppImage"]','PC: al arrancar se borran las versiones viejas descargadas y queda solo la pendiente más nueva',quedan)}
+
 /* Sin categorías también se puede crear un bloque: se toca un hueco de la línea de tiempo y se elige Bloque.
    El hueco se busca en pantalla: la vista Día se coloca en la hora actual y un punto fijo, por la noche, cae en la cabecera del día siguiente */
 async function bloque(a){
@@ -314,6 +321,7 @@ try{
   await sinVisita(pc);await centrar(pc);await aro(pc,true);await guardado(pc);await token(pc);
   await encabezado(pc);await burbujaNota(pc);await fechaHoy(pc);await letraWidgets(pc);await avisoTarde(pc);await sincroniza(pc);await notasPC(pc);await zoomPC(pc);await buscarNota(pc);
   ok(!pc.errores.length,'PC: sin errores de JavaScript',pc.errores);pc.cierra();
+  await limpiezaPC();
   console.log('— Móvil 412×915');
   const mv=await abre(9702,[412,915],true);
   await vacio(mv,false);ok(!await mv.ev(`document.body.classList.contains('deskcal')`),'móvil: sin panel de días');

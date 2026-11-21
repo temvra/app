@@ -126,6 +126,13 @@ ipcMain.handle('upd-download',async(e,url,token,name)=>{
     // Repositorio público: si el token guardado ya no vale, sin él
     if(token&&/http 40[13]/.test(String(err.message)))try{await fetchTo(url,null,file);return {path:file}}catch(e2){return {error:String(e2.message||e2)}}
     return {error:String(err.message||err)}}});
+/* Las versiones descargadas se quedaban para siempre (en un equipo ya sumaban 1,3 GB, unos 125 MB cada una). Al arrancar, antes de que la
+   página pueda empezar otra descarga, se borran las de la versión actual o anteriores, las descargas a medias (.part) y lo que no lleva
+   versión en el nombre; de las más nuevas (pendientes de instalar) se queda solo la última */
+function updClean(){const dir=path.join(app.getPath('userData'),'updates'),ver=s=>{const m=String(s).match(/(\d+)\.(\d+)\.(\d+)/);return m?[+m[1],+m[2],+m[3]]:null},cmp=(a,b)=>a[0]-b[0]||a[1]-b[1]||a[2]-b[2];
+  let L;try{L=fs.readdirSync(dir)}catch(e){return}const cur=ver(app.getVersion()),newer=[],del=f=>{try{fs.rmSync(f,{force:true})}catch(e){}};
+  for(const n of L){const f=path.join(dir,n),v=ver(n);if(/\.part$/.test(n)||!v||!cur||cmp(v,cur)<=0)del(f);else newer.push([v,f])}
+  newer.sort((a,b)=>cmp(b[0],a[0])).slice(1).forEach(([,f])=>del(f))}
 /* Actualización en silencio: se guarda y se aplica cuando la app se cierra */
 let updPending='';
 ipcMain.handle('upd-quit',(e,file)=>{if(!fromApp(e))return {error:'origin'};file=String(file||'');const dir=path.join(app.getPath('userData'),'updates');if(!file.startsWith(dir+path.sep)||!fs.existsSync(file))return {error:'missing'};
@@ -210,6 +217,7 @@ else{
   app.on('before-quit',()=>{quitting=true});
   app.whenReady().then(()=>{
     Menu.setApplicationMenu(null);
+    updClean();
     /* Lo que quedó de arrastrar archivos fuera hace más de un día */
     try{for(const x of fs.readdirSync(DRAGD())){const p=path.join(DRAGD(),x);if(Date.now()-fs.statSync(p).mtimeMs>864e5)fs.unlinkSync(p)}}catch(e){}
     protocol.handle('app',req=>{
