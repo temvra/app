@@ -16,6 +16,7 @@ import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Process;
 import android.provider.Settings;
@@ -27,6 +28,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -62,6 +64,25 @@ final class Focus {
         Set<String> s = new HashSet<>();
         JSONArray a = cfg.optJSONArray("apps");
         if (a != null) for (int i = 0; i < a.length(); i++) s.add(a.optString(i));
+        return s;
+    }
+
+    /**
+     * Apps que nunca se bloquean ni se pueden elegir: Ajustes (desde ahí se quita el servicio), el instalador y los
+     * permisos (desinstalar), Google Play, el escritorio y la propia Temvra. Se resuelven también los de cada fabricante.
+     */
+    static Set<String> protectedPkgs(Context c) {
+        Set<String> s = new HashSet<>(Arrays.asList(c.getPackageName(), "android", "com.android.systemui", "com.android.settings",
+                "com.android.packageinstaller", "com.google.android.packageinstaller", "com.android.permissioncontroller",
+                "com.google.android.permissioncontroller", "com.android.vending"));
+        PackageManager pm = c.getPackageManager();
+        for (Intent it : new Intent[]{new Intent(Settings.ACTION_SETTINGS), new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS),
+                new Intent(Intent.ACTION_DELETE, Uri.parse("package:" + c.getPackageName())), new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)}) {
+            try {
+                ResolveInfo r = pm.resolveActivity(it, PackageManager.MATCH_DEFAULT_ONLY);
+                if (r != null && r.activityInfo != null) s.add(r.activityInfo.packageName);
+            } catch (Exception ignored) {}
+        }
         return s;
     }
 
@@ -157,10 +178,7 @@ final class Focus {
     static JSONArray launchables(Context c, boolean icons) {
         PackageManager pm = c.getPackageManager();
         JSONArray out = new JSONArray();
-        Set<String> seen = new HashSet<>();
-        seen.add(c.getPackageName());
-        String home = homePkg(c);
-        if (home != null) seen.add(home);
+        Set<String> seen = protectedPkgs(c);
         List<ResolveInfo> l = pm.queryIntentActivities(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER), 0);
         for (ResolveInfo r : l) {
             String p = r.activityInfo.packageName;
@@ -213,6 +231,7 @@ final class Focus {
     static Verdict verdict(Context c, JSONObject cfg, long now) {
         Verdict v = new Verdict();
         Set<String> apps = apps(cfg);
+        apps.removeAll(protectedPkgs(c));
         JSONObject s = cfg.optJSONObject("session");
         boolean usage = hasUsage(c);
         long next = Long.MAX_VALUE;
@@ -251,7 +270,8 @@ final class Focus {
         if (nm == null) return;
         JSONObject s = cfg.optJSONObject("session");
         long now = System.currentTimeMillis();
-        if (s == null || now < s.optLong("start") || now >= s.optLong("end")) { nm.cancel(NOTIF); return; }
+        // El aviso de empezar puede llegar un instante antes de la hora: se da un margen de 2 s
+        if (s == null || now + 2000 < s.optLong("start") || now >= s.optLong("end")) { nm.cancel(NOTIF); return; }
         long end = s.optLong("end");
         if (Build.VERSION.SDK_INT >= 26 && nm.getNotificationChannel(CH) == null) {
             NotificationChannel ch = new NotificationChannel(CH, tx(cfg, "channel", "Sesión de enfoque"), NotificationManager.IMPORTANCE_LOW);

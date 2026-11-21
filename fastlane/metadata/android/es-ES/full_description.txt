@@ -6,6 +6,12 @@ Temvra junta en una sola app todo lo que necesitas para organizar tu tiempo: tem
 • Cronómetro, vueltas, alarmas y relojes del mundo
 • Las alarmas suenan aunque tengas la pantalla apagada o bloqueada
 
+🎯 ENFOQUE
+• Sesiones de concentración con cuenta atrás, ahora o a la hora que elijas
+• Límite de tiempo, por sesión o por hora, para las apps que te distraen; cuando se acaba, Temvra las bloquea (opcional: usa el servicio de accesibilidad solo para saber qué app se abre, y nada sale del móvil)
+• Aviso al empezar y al terminar, con una notificación mientras dura
+• Estadísticas: racha, mejor hora, duración media, sesiones terminadas e historial
+
 📅 AGENDA CON EL RAYO DE LA HORA
 • Vistas de día, semana, mes, año y programación
 • Una línea de luz marca el momento exacto en el que estás, del color que tú elijas
@@ -25,7 +31,7 @@ Temvra junta en una sola app todo lo que necesitas para organizar tu tiempo: tem
 • Widgets del temporizador, de las alarmas, de la agenda del día, de tus bloques y de tus notas
 
 🔒 TUS DATOS SON TUYOS
-• Sin cuentas ni registro, sin anuncios, sin estadísticas ni rastreo
+• Sin cuentas ni registro, sin anuncios, sin analíticas ni rastreo
 • Funciona sin conexión
 • Si quieres, sincroniza tus notas, tu agenda y tus tiempos con tu propio repositorio de GitHub y llévalos a otros dispositivos
 • Copias de seguridad que guardas donde tú quieras

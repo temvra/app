@@ -141,7 +141,11 @@ public final class Alerts {
             String ch = o.optString("channel");
             if ("alarms".equals(ch)) alarm = o;
             else if ("timer".equals(ch)) { if (timer == null || o.optLong("at") > timer.optLong("at")) timer = o; }
-            else notifyReminder(c, o);
+            else {
+                notifyReminder(c, o);
+                // Sesión de enfoque programada: al empezar sale también la notificación fija con la cuenta atrás
+                if (o.optString("key").startsWith("fc|s|")) Focus.notifySession(c, Focus.cfg(c));
+            }
         }
         store(c, rest);
         armNext(c);

@@ -29,6 +29,8 @@ public class FocusGuard extends AccessibilityService {
     private String cur = "";
     private String lastBlock = "";
     private long lastBlockAt;
+    /** Ajustes, el instalador, Google Play… nunca se bloquean (ver Focus.protectedPkgs). */
+    private Set<String> safe = new java.util.HashSet<>();
 
     private final BroadcastReceiver screen = new BroadcastReceiver() {
         @Override public void onReceive(Context c, Intent i) {
@@ -40,6 +42,7 @@ public class FocusGuard extends AccessibilityService {
     @Override
     protected void onServiceConnected() {
         live = this;
+        safe = Focus.protectedPkgs(this);
         IntentFilter f = new IntentFilter(Intent.ACTION_SCREEN_OFF);
         f.addAction(Intent.ACTION_USER_PRESENT);
         try {
@@ -84,6 +87,7 @@ public class FocusGuard extends AccessibilityService {
         h.removeCallbacks(tick);
         JSONObject cfg = Focus.cfg(this);
         Set<String> apps = Focus.apps(cfg);
+        apps.removeAll(safe);
         if (apps.isEmpty() || !apps.contains(cur)) return;
         PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
         if (pm != null && !pm.isInteractive()) return;

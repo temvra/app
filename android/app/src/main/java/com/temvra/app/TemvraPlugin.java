@@ -354,12 +354,19 @@ public class TemvraPlugin extends Plugin {
 
     /* ---------------- Enfoque (Focus.java, FocusGuard.java) ---------------- */
 
-    /** Permisos de Enfoque. can: esta versión trae el bloqueo de apps (la de Google Play no). */
+    /**
+     * Permisos de Enfoque. can: esta versión trae el bloqueo de apps, es decir, su manifiesto declara FocusGuard
+     * (la de Google Play lo quita mientras no se publique con el bloqueo). play: versión de Google Play.
+     */
     @PluginMethod
     public void focusStatus(PluginCall call) {
         Context c = getContext();
         JSObject out = new JSObject();
-        out.put("can", !BuildConfig.PLAY);
+        boolean can;
+        try { c.getPackageManager().getServiceInfo(new android.content.ComponentName(c, FocusGuard.class), 0); can = true; }
+        catch (Exception e) { can = false; }
+        out.put("can", can);
+        out.put("play", BuildConfig.PLAY);
         out.put("usage", Focus.hasUsage(c));
         out.put("guard", Focus.guardOn(c));
         out.put("live", FocusGuard.live != null);
